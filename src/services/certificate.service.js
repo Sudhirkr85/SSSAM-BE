@@ -19,6 +19,49 @@ const createHttpError = (statusCode, message) => {
   return err;
 };
 
+const getCertificateRecordWithRecovery = async (certificateNumber) => {
+  const normalizedNumber = String(certificateNumber || '').trim();
+  if (!normalizedNumber) {
+    return null;
+  }
+
+  let record = await CertificateRecord.findOne({ certificateNumber: normalizedNumber }).lean();
+  if (record) {
+    return record;
+  }
+
+  const application = await CertificateApplication.findOne({
+    certificateNumber: normalizedNumber,
+    status: 'Approved'
+  });
+
+  if (!application) {
+    return null;
+  }
+
+  const issueDate = application.issueDate || new Date();
+
+  await CertificateRecord.updateOne(
+    { certificateNumber: normalizedNumber },
+    {
+      certificateNumber: normalizedNumber,
+      fullName: application.fullName,
+      dateOfBirth: application.dateOfBirth,
+      course: application.course,
+      certificateType: application.certificateType,
+      duration: application.duration,
+      issueDate,
+      instituteName: 'SSSAM Academy',
+      status: 'Verified',
+      applicationId: application._id
+    },
+    { upsert: true }
+  );
+
+  record = await CertificateRecord.findOne({ certificateNumber: normalizedNumber }).lean();
+  return record;
+};
+
 const applyForCertificate = async (payload) => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
@@ -40,7 +83,7 @@ const applyForCertificate = async (payload) => {
 };
 
 const verifyCertificate = async (certificateNumber) => {
-  const record = await CertificateRecord.findOne({ certificateNumber }).lean();
+  const record = await getCertificateRecordWithRecovery(certificateNumber);
   if (!record) {
     throw createHttpError(404, 'Certificate not found.');
   }
@@ -141,7 +184,7 @@ const rejectApplication = async (applicationId, remarks = null) => {
 };
 
 const getCertificateForDownload = async (certificateNumber, dateOfBirth) => {
-  const record = await CertificateRecord.findOne({ certificateNumber }).lean();
+  const record = await getCertificateRecordWithRecovery(certificateNumber);
 
   if (!record) {
     throw createHttpError(404, 'Certificate not found.');
