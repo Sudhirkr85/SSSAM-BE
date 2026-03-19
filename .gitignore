@@ -39,6 +39,5 @@ coverage/
 .cache/
 
 # Misc
-
 *.pid
 *.seed
