@@ -15,10 +15,11 @@ const {
   applicationIdParamSchema,
   rejectSchema
 } = require('../validators/certificate.validator');
+const applyLimiter = require('../middlewares/rateLimiter');
 
 const router = express.Router();
 
-router.post('/apply', validate(applySchema), applyCertificate);
+router.post('/apply', applyLimiter, validate(applySchema), applyCertificate);
 router.get('/verify', validate(verifyQuerySchema, 'query'), verifyCertificateByNumber);
 router.post('/download', validate(downloadSchema), downloadCertificate);
 router.get('/status/:applicationId', validate(applicationIdParamSchema, 'params'), getStatusByApplicationId);
