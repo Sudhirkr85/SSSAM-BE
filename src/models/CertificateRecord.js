@@ -1,0 +1,56 @@
+const mongoose = require('mongoose');
+
+const certificateRecordSchema = new mongoose.Schema(
+  {
+    certificateNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true
+    },
+    fullName: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    dateOfBirth: {
+      type: Date,
+      required: true
+    },
+    course: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    certificateType: {
+      type: String,
+      required: true,
+      enum: ['Training', 'Workshop', 'Internship']
+    },
+    duration: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    issueDate: {
+      type: Date,
+      required: true
+    },
+    instituteName: {
+      type: String,
+      default: 'SSSAM Academy'
+    },
+    status: {
+      type: String,
+      default: 'Verified'
+    },
+    applicationId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'CertificateApplication',
+      required: true
+    }
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model('CertificateRecord', certificateRecordSchema);

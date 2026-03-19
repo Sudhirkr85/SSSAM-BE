@@ -1,0 +1,64 @@
+const Joi = require('joi');
+
+const certificateTypes = ['Training', 'Workshop', 'Internship'];
+
+const applySchema = Joi.object({
+  fullName: Joi.string().trim().min(2).max(120).required(),
+  phoneNumber: Joi.string()
+    .trim()
+    .pattern(/^[6-9]\d{9}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'phoneNumber must be a valid Indian 10-digit mobile number.'
+    }),
+  email: Joi.string().trim().email().required(),
+  dateOfBirth: Joi.date().required(),
+  address: Joi.string().trim().min(5).max(300).required(),
+  course: Joi.string().trim().min(1).max(200).required(),
+  certificateType: Joi.string()
+    .valid(...certificateTypes)
+    .required(),
+  duration: Joi.string().trim().min(1).max(100).required()
+});
+
+const verifyQuerySchema = Joi.object({
+  certificateNumber: Joi.string().trim().required()
+});
+
+const downloadSchema = Joi.object({
+  certificateNumber: Joi.string().trim().required(),
+  dateOfBirth: Joi.date().required()
+});
+
+const applicationIdParamSchema = Joi.object({
+  applicationId: Joi.string().trim().required()
+});
+
+const rejectSchema = Joi.object({
+  remarks: Joi.string().trim().max(500).allow('', null)
+});
+
+const validate = (schema, source = 'body') => (req, _res, next) => {
+  const { error, value } = schema.validate(req[source], {
+    abortEarly: false,
+    stripUnknown: true
+  });
+
+  if (error) {
+    const err = new Error(error.details.map((item) => item.message).join(', '));
+    err.statusCode = 400;
+    return next(err);
+  }
+
+  req[source] = value;
+  return next();
+};
+
+module.exports = {
+  validate,
+  applySchema,
+  verifyQuerySchema,
+  downloadSchema,
+  applicationIdParamSchema,
+  rejectSchema
+};
