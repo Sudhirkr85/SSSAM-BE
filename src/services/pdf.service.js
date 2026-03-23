@@ -3,11 +3,11 @@ const path = require('path');
 const { PDFDocument, StandardFonts, rgb, degrees } = require('pdf-lib');
 
 const LOGO_PATH =
-  process.env.LOGO_PATH || path.resolve(__dirname, '../../sssam_logo.png');
+  process.env.LOGO_PATH || path.resolve(__dirname, './sssam_logo.png');
 const MOHIT_SIGN_PATH =
-  process.env.MOHIT_SIGN_PATH || path.resolve(__dirname, '../../mohit_sign.png');
+  process.env.MOHIT_SIGN_PATH || path.resolve(__dirname, './mohit_sign.png');
 const SATISH_SIGN_PATH =
-  process.env.SATISH_SIGN_PATH || path.resolve(__dirname, '../../Satish_sign.png');
+  process.env.SATISH_SIGN_PATH || path.resolve(__dirname, './satish_sign.png');
 
 const formatDate = (date) =>
   new Date(date).toLocaleDateString('en-IN', {
