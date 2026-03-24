@@ -1,144 +1,64 @@
-const CertificateApplication = require('../models/CertificateApplication');
-const CertificateRecord = require('../models/CertificateRecord');
-const { sendEmail } = require('./email.service');
-const { generateApplicationId } = require('../utils/appId');
-const { generateCertificateNumber } = require('../utils/certNumber');
-
-const isSameDate = (d1, d2) => {
-  const a = new Date(d1);
-  const b = new Date(d2);
-  return (
-    a.getUTCFullYear() === b.getUTCFullYear() &&
-    a.getUTCMonth() === b.getUTCMonth() &&
-    a.getUTCDate() === b.getUTCDate()
-  );
-};
-
-const createHttpError = (statusCode, message) => {
-  const err = new Error(message);
-  err.statusCode = statusCode;
-  return err;
-};
-
-const getCertificateRecordWithRecovery = async (certificateNumber) => {
-  const normalizedNumber = String(certificateNumber || '').trim();
-  if (!normalizedNumber) {
-    return null;
-  }
-
-  let record = await CertificateRecord.findOne({ certificateNumber: normalizedNumber }).lean();
-  if (record) {
-    return record;
-  }
-
-  const application = await CertificateApplication.findOne({
-    certificateNumber: normalizedNumber,
-    status: 'Approved'
-  });
-
-  if (!application) {
-    return null;
-  }
-
-  const issueDate = application.issueDate || new Date();
-
-  await CertificateRecord.updateOne(
-    { certificateNumber: normalizedNumber },
-    {
-      certificateNumber: normalizedNumber,
-      fullName: application.fullName,
-      dateOfBirth: application.dateOfBirth,
-      course: application.course,
-      certificateType: application.certificateType,
-      duration: application.duration,
-      issueDate,
-      instituteName: 'SSSAM Academy',
-      status: 'Verified',
-      applicationId: application._id
-    },
-    { upsert: true }
-  );
-
-  record = await CertificateRecord.findOne({ certificateNumber: normalizedNumber }).lean();
-  return record;
-};
+const CertificateApplication = require("../models/CertificateApplication");
+const CertificateRecord = require("../models/CertificateRecord");
+const { sendEmail } = require("./email.service");
+const { generateApplicationId } = require("../utils/appId");
+const { generateCertificateNumber } = require("../utils/certNumber");
+const { getStudentEmailTemplate } = require("./emailTemplates");
 
 const applyForCertificate = async (payload) => {
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const applicationId = await generateApplicationId();
+
       const created = await CertificateApplication.create({
         ...payload,
-        applicationId
+        applicationId,
       });
-      // Non-blocking email trigger (student)
-      sendEmail({
-        to: created.email,
-        subject: 'Your Certificate Application Received',
-        text: `Dear ${created.fullName},\n\nYour application (ID: ${created.applicationId}) for ${created.course} (${created.certificateType}) has been received.\n\nThank you!`,
-      }).catch((err) => console.error('Email send error (apply):', err));
+
+      // ✅ NON-BLOCKING EMAIL (TEMPLATE)
+      setImmediate(() => {
+        sendEmail({
+          to: created.email,
+          subject: "Application Submitted - SSSAM Academy",
+          html: getStudentEmailTemplate({
+            name: created.fullName,
+            email: created.email,
+            course: created.course,
+            certificateType: created.certificateType,
+            applicationId: created.applicationId,
+            certificateNumber: "",
+            duration: created.duration,
+            status: "Pending",
+            statusMessage: "Your application has been successfully submitted.",
+            date: new Date().toLocaleString(),
+          }),
+        }).catch((err) => console.error("Email error (apply):", err));
+      });
+
       return created;
     } catch (error) {
-      if (error?.code === 11000 && attempt < 4) {
-        continue;
-      }
+      if (error?.code === 11000 && attempt < 4) continue;
       throw error;
     }
   }
-  throw createHttpError(500, 'Failed to create application. Please try again.');
-};
-
-const verifyCertificate = async (certificateNumber) => {
-  const record = await getCertificateRecordWithRecovery(certificateNumber);
-  if (!record) {
-    throw createHttpError(404, 'Certificate not found.');
-  }
-  return record;
-};
-
-const getApplicationStatus = async (applicationId) => {
-  const application = await CertificateApplication.findOne({ applicationId }).lean();
-
-  if (!application) {
-    throw createHttpError(404, 'Application not found.');
-  }
-
-  return application;
 };
 
 const approveApplication = async (applicationId) => {
   const application = await CertificateApplication.findOne({ applicationId });
-  if (!application) {
-    throw createHttpError(404, 'Application not found.');
-  }
-  // Idempotent behavior for already-approved applications.
-  if (application.status === 'Approved' && application.certificateNumber) {
-    const existing = await CertificateRecord.findOne({
-      certificateNumber: application.certificateNumber
-    });
-    if (existing) {
-      return application;
-    }
-  }
+  if (!application) throw new Error("Application not found");
+
   let certificateNumber = application.certificateNumber;
+
   if (!certificateNumber) {
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      try {
-        certificateNumber = await generateCertificateNumber();
-        if (certificateNumber) break;
-      } catch (error) {
-        if (attempt === 4) throw error;
-      }
-    }
+    certificateNumber = await generateCertificateNumber();
   }
-  const issueDate = new Date();
-  application.status = 'Approved';
+
+  application.status = "Approved";
   application.certificateNumber = certificateNumber;
-  application.issueDate = issueDate;
-  if (application.remarks) {
-    application.remarks = null;
-  }
+  application.issueDate = new Date();
+
   await application.save();
+
   await CertificateRecord.updateOne(
     { certificateNumber },
     {
@@ -148,63 +68,39 @@ const approveApplication = async (applicationId) => {
       course: application.course,
       certificateType: application.certificateType,
       duration: application.duration,
-      issueDate,
-      instituteName: 'SSSAM Academy',
-      status: 'Verified',
-      applicationId: application._id
+      issueDate: application.issueDate,
+      instituteName: "SSSAM Academy",
+      status: "Verified",
+      applicationId: application._id,
     },
-    { upsert: true }
+    { upsert: true },
   );
-  // Non-blocking email trigger (student)
-  sendEmail({
-    to: application.email,
-    subject: 'Your Certificate Has Been Approved',
-    text: `Dear ${application.fullName},\n\nYour certificate application (ID: ${application.applicationId}) has been approved.\nCertificate Number: ${application.certificateNumber}\nCourse: ${application.course}\nType: ${application.certificateType}\n\nCongratulations!`,
-  }).catch((err) => console.error('Email send error (approve):', err));
-  return application;
-};
 
-const rejectApplication = async (applicationId, remarks = null) => {
-  const application = await CertificateApplication.findOne({ applicationId });
-
-  if (!application) {
-    throw createHttpError(404, 'Application not found.');
-  }
-
-  const oldCertificateNumber = application.certificateNumber;
-
-  application.status = 'Rejected';
-  application.remarks = remarks || null;
-  application.certificateNumber = null;
-  application.issueDate = null;
-  await application.save();
-
-  if (oldCertificateNumber) {
-    await CertificateRecord.deleteOne({ certificateNumber: oldCertificateNumber });
-  }
+  // ✅ NON-BLOCKING EMAIL (TEMPLATE)
+  setImmediate(() => {
+    sendEmail({
+      to: application.email,
+      subject: "Application Approved - SSSAM Academy",
+      html: getStudentEmailTemplate({
+        name: application.fullName,
+        email: application.email,
+        course: application.course,
+        certificateType: application.certificateType,
+        applicationId: application.applicationId,
+        certificateNumber: application.certificateNumber,
+        duration: application.duration,
+        status: "Approved",
+        statusMessage:
+          "Your application has been approved. Your certificate has been generated.",
+        date: new Date().toLocaleString(),
+      }),
+    }).catch((err) => console.error("Email error (approve):", err));
+  });
 
   return application;
-};
-
-const getCertificateForDownload = async (certificateNumber, dateOfBirth) => {
-  const record = await getCertificateRecordWithRecovery(certificateNumber);
-
-  if (!record) {
-    throw createHttpError(404, 'Certificate not found.');
-  }
-
-  if (!isSameDate(record.dateOfBirth, dateOfBirth)) {
-    throw createHttpError(400, 'Invalid dateOfBirth for this certificate.');
-  }
-
-  return record;
 };
 
 module.exports = {
   applyForCertificate,
-  verifyCertificate,
-  getApplicationStatus,
   approveApplication,
-  rejectApplication,
-  getCertificateForDownload
 };
