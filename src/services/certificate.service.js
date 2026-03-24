@@ -1,78 +1,9 @@
-<<<<<<< HEAD
 const CertificateApplication = require("../models/CertificateApplication");
 const CertificateRecord = require("../models/CertificateRecord");
 const { sendEmail } = require("./email.service");
 const { generateApplicationId } = require("../utils/appId");
 const { generateCertificateNumber } = require("../utils/certNumber");
 const { getStudentEmailTemplate } = require("./emailTemplates");
-=======
-// Utility for normalization
-const normalizeText = (value) => String(value || '').trim().replace(/\s+/g, ' ');
-const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const CertificateApplication = require('../models/CertificateApplication');
-const CertificateRecord = require('../models/CertificateRecord');
-const { generateApplicationId } = require('../utils/appId');
-const { generateCertificateNumber } = require('../utils/certNumber');
-
-const isSameDate = (d1, d2) => {
-  const a = new Date(d1);
-  const b = new Date(d2);
-  return (
-    a.getUTCFullYear() === b.getUTCFullYear() &&
-    a.getUTCMonth() === b.getUTCMonth() &&
-    a.getUTCDate() === b.getUTCDate()
-  );
-};
-
-const createHttpError = (statusCode, message) => {
-  const err = new Error(message);
-  err.statusCode = statusCode;
-  return err;
-};
-
-const getCertificateRecordWithRecovery = async (certificateNumber) => {
-  const normalizedNumber = String(certificateNumber || '').trim();
-  if (!normalizedNumber) {
-    return null;
-  }
-
-  let record = await CertificateRecord.findOne({ certificateNumber: normalizedNumber }).lean();
-  if (record) {
-    return record;
-  }
-
-  const application = await CertificateApplication.findOne({
-    certificateNumber: normalizedNumber,
-    status: 'Approved'
-  });
-
-  if (!application) {
-    return null;
-  }
-
-  const issueDate = application.issueDate || new Date();
-
-  await CertificateRecord.updateOne(
-    { certificateNumber: normalizedNumber },
-    {
-      certificateNumber: normalizedNumber,
-      fullName: application.fullName,
-      dateOfBirth: application.dateOfBirth,
-      course: application.course,
-      certificateType: application.certificateType,
-      duration: application.duration,
-      issueDate,
-      instituteName: 'SSSAM Academy',
-      status: 'Verified',
-      applicationId: application._id
-    },
-    { upsert: true }
-  );
-
-  record = await CertificateRecord.findOne({ certificateNumber: normalizedNumber }).lean();
-  return record;
-};
->>>>>>> 14ebf5fd34f058e3b23a07d0a36a0999e91d8e3d
 
 const applyForCertificate = async (payload) => {
   // Duplicate prevention: block if phoneNumber+email+course+certificateType match (duration ignored)
