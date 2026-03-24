@@ -1,10 +1,10 @@
 const Enquiry = require('../models/Enquiry');
 const { generateEnquiryId } = require('../utils/enquiryId');
+const { sendEmail } = require('./email.service');
 
 const submitEnquiry = async (enquiryData, ipAddress) => {
   try {
     const enquiryId = generateEnquiryId();
-
     const enquiry = new Enquiry({
       enquiryId,
       fullName: enquiryData.fullName,
@@ -16,8 +16,18 @@ const submitEnquiry = async (enquiryData, ipAddress) => {
       status: 'Pending',
       ipAddress
     });
-
     const savedEnquiry = await enquiry.save();
+    // Non-blocking admin email trigger
+    if (process.env.ADMIN_EMAILS) {
+      const adminEmails = process.env.ADMIN_EMAILS.split(',').map(e => e.trim()).filter(Boolean);
+      if (adminEmails.length > 0) {
+        sendEmail({
+          to: adminEmails,
+          subject: 'New Enquiry Received',
+          text: `New enquiry received:\n\nName: ${enquiryData.fullName}\nPhone: ${enquiryData.phoneNumber}\nCourse: ${enquiryData.course}\nDemo Type: ${enquiryData.demoType}\nMessage: ${enquiryData.message || ''}\nEnquiry ID: ${enquiryId}`
+        }).catch((err) => console.error('Admin email send error (enquiry):', err));
+      }
+    }
     return savedEnquiry;
   } catch (error) {
     throw new Error(`Failed to submit enquiry: ${error.message}`);

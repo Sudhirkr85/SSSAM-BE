@@ -1,5 +1,6 @@
 const CertificateApplication = require('../models/CertificateApplication');
 const CertificateRecord = require('../models/CertificateRecord');
+const { sendEmail } = require('./email.service');
 const { generateApplicationId } = require('../utils/appId');
 const { generateCertificateNumber } = require('../utils/certNumber');
 
@@ -70,6 +71,12 @@ const applyForCertificate = async (payload) => {
         ...payload,
         applicationId
       });
+      // Non-blocking email trigger (student)
+      sendEmail({
+        to: created.email,
+        subject: 'Your Certificate Application Received',
+        text: `Dear ${created.fullName},\n\nYour application (ID: ${created.applicationId}) for ${created.course} (${created.certificateType}) has been received.\n\nThank you!`,
+      }).catch((err) => console.error('Email send error (apply):', err));
       return created;
     } catch (error) {
       if (error?.code === 11000 && attempt < 4) {
@@ -78,7 +85,6 @@ const applyForCertificate = async (payload) => {
       throw error;
     }
   }
-
   throw createHttpError(500, 'Failed to create application. Please try again.');
 };
 
@@ -102,24 +108,19 @@ const getApplicationStatus = async (applicationId) => {
 
 const approveApplication = async (applicationId) => {
   const application = await CertificateApplication.findOne({ applicationId });
-
   if (!application) {
     throw createHttpError(404, 'Application not found.');
   }
-
   // Idempotent behavior for already-approved applications.
   if (application.status === 'Approved' && application.certificateNumber) {
     const existing = await CertificateRecord.findOne({
       certificateNumber: application.certificateNumber
     });
-
     if (existing) {
       return application;
     }
   }
-
   let certificateNumber = application.certificateNumber;
-
   if (!certificateNumber) {
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
@@ -130,9 +131,7 @@ const approveApplication = async (applicationId) => {
       }
     }
   }
-
   const issueDate = new Date();
-
   application.status = 'Approved';
   application.certificateNumber = certificateNumber;
   application.issueDate = issueDate;
@@ -140,7 +139,6 @@ const approveApplication = async (applicationId) => {
     application.remarks = null;
   }
   await application.save();
-
   await CertificateRecord.updateOne(
     { certificateNumber },
     {
@@ -157,7 +155,12 @@ const approveApplication = async (applicationId) => {
     },
     { upsert: true }
   );
-
+  // Non-blocking email trigger (student)
+  sendEmail({
+    to: application.email,
+    subject: 'Your Certificate Has Been Approved',
+    text: `Dear ${application.fullName},\n\nYour certificate application (ID: ${application.applicationId}) has been approved.\nCertificate Number: ${application.certificateNumber}\nCourse: ${application.course}\nType: ${application.certificateType}\n\nCongratulations!`,
+  }).catch((err) => console.error('Email send error (approve):', err));
   return application;
 };
 
