@@ -4,9 +4,19 @@ const { sendEmail } = require("./email.service");
 const { generateApplicationId } = require("../utils/appId");
 const { generateCertificateNumber } = require("../utils/certNumber");
 const { getStudentEmailTemplate } = require("./emailTemplates");
+const createHttpError = require("http-errors");
 
+// ✅ Helpers
+const normalizeText = (text) => text?.toString().trim();
+
+const escapeRegex = (text) => {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+// =============================
+// ✅ APPLY
+// =============================
 const applyForCertificate = async (payload) => {
-  // Duplicate prevention: block if phoneNumber+email+course+certificateType match (duration ignored)
   const normalizedPhoneNumber = normalizeText(payload.phoneNumber);
   const normalizedEmail = normalizeText(payload.email).toLowerCase();
   const normalizedCourse = normalizeText(payload.course);
@@ -14,79 +24,70 @@ const applyForCertificate = async (payload) => {
 
   const existingApplication = await CertificateApplication.findOne({
     phoneNumber: normalizedPhoneNumber,
-    email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: 'i' },
-    course: { $regex: `^${escapeRegex(normalizedCourse)}$`, $options: 'i' },
-    certificateType: normalizedCertificateType
+    email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
+    course: { $regex: `^${escapeRegex(normalizedCourse)}$`, $options: "i" },
+    certificateType: normalizedCertificateType,
   }).lean();
 
   if (existingApplication) {
-    throw createHttpError(409, 'Application already exists for this mobile, email, course and certificate type.');
+    throw createHttpError(409, "Application already exists");
   }
 
-  const normalizedPayload = {
+  const applicationId = await generateApplicationId();
+
+  const created = await CertificateApplication.create({
     ...payload,
     phoneNumber: normalizedPhoneNumber,
     email: normalizedEmail,
     course: normalizedCourse,
-    certificateType: normalizedCertificateType
-  };
-  for (let attempt = 0; attempt < 5; attempt += 1) {
-    try {
-      const applicationId = await generateApplicationId();
+    certificateType: normalizedCertificateType,
+    applicationId,
+  });
 
-      const created = await CertificateApplication.create({
-        ...payload,
-        applicationId,
-      });
+  // ✅ NON-BLOCKING EMAIL
+  setImmediate(() => {
+    sendEmail({
+      to: created.email,
+      subject: "Application Submitted - SSSAM Academy",
+      html: getStudentEmailTemplate({
+        name: created.fullName,
+        course: created.course,
+        certificateType: created.certificateType,
+        applicationId: created.applicationId,
+        duration: created.duration,
+        status: "Pending",
+        statusMessage: "Your application has been successfully submitted.",
+        date: new Date().toLocaleString(),
+      }),
+    }).catch((err) => console.error("Email error:", err));
+  });
 
-      // ✅ NON-BLOCKING EMAIL (TEMPLATE)
-      setImmediate(() => {
-        sendEmail({
-          to: created.email,
-          subject: "Application Submitted - SSSAM Academy",
-          html: getStudentEmailTemplate({
-            name: created.fullName,
-            email: created.email,
-            course: created.course,
-            certificateType: created.certificateType,
-            applicationId: created.applicationId,
-            certificateNumber: "",
-            duration: created.duration,
-            status: "Pending",
-            statusMessage: "Your application has been successfully submitted.",
-            date: new Date().toLocaleString(),
-          }),
-        }).catch((err) => console.error("Email error (apply):", err));
-      });
-
-      return created;
-    } catch (error) {
-      if (error?.code === 11000 && attempt < 4) continue;
-      throw error;
-    }
-  }
+  return created;
 };
 
+// =============================
+// ✅ APPROVE
+// =============================
 const approveApplication = async (applicationId) => {
   const application = await CertificateApplication.findOne({ applicationId });
-  if (!application) throw new Error("Application not found");
 
-  let certificateNumber = application.certificateNumber;
+  if (!application) {
+    throw createHttpError(404, "Application not found");
+  }
 
-  if (!certificateNumber) {
-    certificateNumber = await generateCertificateNumber();
+  if (!application.certificateNumber) {
+    application.certificateNumber = await generateCertificateNumber();
   }
 
   application.status = "Approved";
-  application.certificateNumber = certificateNumber;
   application.issueDate = new Date();
 
   await application.save();
 
   await CertificateRecord.updateOne(
-    { certificateNumber },
+    { certificateNumber: application.certificateNumber },
     {
-      certificateNumber,
+      certificateNumber: application.certificateNumber,
       fullName: application.fullName,
       dateOfBirth: application.dateOfBirth,
       course: application.course,
@@ -97,34 +98,96 @@ const approveApplication = async (applicationId) => {
       status: "Verified",
       applicationId: application._id,
     },
-    { upsert: true },
+    { upsert: true }
   );
 
-  // ✅ NON-BLOCKING EMAIL (TEMPLATE)
+  // ✅ NON-BLOCKING EMAIL
   setImmediate(() => {
     sendEmail({
       to: application.email,
       subject: "Application Approved - SSSAM Academy",
       html: getStudentEmailTemplate({
         name: application.fullName,
-        email: application.email,
         course: application.course,
         certificateType: application.certificateType,
         applicationId: application.applicationId,
         certificateNumber: application.certificateNumber,
         duration: application.duration,
         status: "Approved",
-        statusMessage:
-          "Your application has been approved. Your certificate has been generated.",
+        statusMessage: "Your certificate has been generated.",
         date: new Date().toLocaleString(),
       }),
-    }).catch((err) => console.error("Email error (approve):", err));
+    }).catch((err) => console.error("Email error:", err));
   });
 
   return application;
 };
 
+// =============================
+// ✅ VERIFY
+// =============================
+const verifyCertificate = async (certificateNumber) => {
+  const record = await CertificateRecord.findOne({ certificateNumber });
+
+  if (!record) {
+    throw createHttpError(404, "Certificate not found");
+  }
+
+  return record;
+};
+
+// =============================
+// ✅ STATUS
+// =============================
+const getApplicationStatus = async (applicationId) => {
+  const application = await CertificateApplication.findOne({ applicationId });
+
+  if (!application) {
+    throw createHttpError(404, "Application not found");
+  }
+
+  return application;
+};
+
+// =============================
+// ✅ REJECT
+// =============================
+const rejectApplication = async (applicationId, remarks) => {
+  const application = await CertificateApplication.findOne({ applicationId });
+
+  if (!application) {
+    throw createHttpError(404, "Application not found");
+  }
+
+  application.status = "Rejected";
+  application.remarks = remarks;
+
+  await application.save();
+
+  return application;
+};
+
+// =============================
+// ✅ DOWNLOAD
+// =============================
+const getCertificateForDownload = async (certificateNumber, dateOfBirth) => {
+  const record = await CertificateRecord.findOne({
+    certificateNumber,
+    dateOfBirth,
+  });
+
+  if (!record) {
+    throw createHttpError(404, "Invalid details");
+  }
+
+  return record;
+};
+
 module.exports = {
   applyForCertificate,
   approveApplication,
+  verifyCertificate,
+  getApplicationStatus,
+  rejectApplication,
+  getCertificateForDownload
 };
