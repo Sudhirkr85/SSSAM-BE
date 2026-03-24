@@ -1,3 +1,6 @@
+// Utility for normalization
+const normalizeText = (value) => String(value || '').trim().replace(/\s+/g, ' ');
+const escapeRegex = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const CertificateApplication = require('../models/CertificateApplication');
 const CertificateRecord = require('../models/CertificateRecord');
 const { generateApplicationId } = require('../utils/appId');
@@ -63,11 +66,35 @@ const getCertificateRecordWithRecovery = async (certificateNumber) => {
 };
 
 const applyForCertificate = async (payload) => {
+  // Duplicate prevention: block if phoneNumber+email+course+certificateType match (duration ignored)
+  const normalizedPhoneNumber = normalizeText(payload.phoneNumber);
+  const normalizedEmail = normalizeText(payload.email).toLowerCase();
+  const normalizedCourse = normalizeText(payload.course);
+  const normalizedCertificateType = normalizeText(payload.certificateType);
+
+  const existingApplication = await CertificateApplication.findOne({
+    phoneNumber: normalizedPhoneNumber,
+    email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: 'i' },
+    course: { $regex: `^${escapeRegex(normalizedCourse)}$`, $options: 'i' },
+    certificateType: normalizedCertificateType
+  }).lean();
+
+  if (existingApplication) {
+    throw createHttpError(409, 'Application already exists for this mobile, email, course and certificate type.');
+  }
+
+  const normalizedPayload = {
+    ...payload,
+    phoneNumber: normalizedPhoneNumber,
+    email: normalizedEmail,
+    course: normalizedCourse,
+    certificateType: normalizedCertificateType
+  };
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
       const applicationId = await generateApplicationId();
       const created = await CertificateApplication.create({
-        ...payload,
+        ...normalizedPayload,
         applicationId
       });
       return created;
