@@ -46,14 +46,28 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    await connectDB();
-    app.listen(PORT, () => {
+    // eslint-disable-next-line no-console
+    console.log('Attempting to connect to database...');
+    const dbConnected = await connectDB();
+    
+    const server = app.listen(PORT, () => {
       // eslint-disable-next-line no-console
       console.log(`Server is running on port ${PORT}`);
+      if (!dbConnected) {
+        // eslint-disable-next-line no-console
+        console.warn('Server running without database connection. Some features may not work.');
+      }
+    });
+
+    // Handle server errors
+    server.on('error', (error) => {
+      // eslint-disable-next-line no-console
+      console.error('Server error:', error.message);
+      process.exit(1);
     });
   } catch (error) {
     // eslint-disable-next-line no-console
-    console.error("Failed to start server:", error.message);
+    console.error('Failed to start server:', error.message);
     process.exit(1);
   }
 };
