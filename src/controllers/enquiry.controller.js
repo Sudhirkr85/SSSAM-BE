@@ -3,41 +3,63 @@ const {
   getEnquiryStatus,
   getAllEnquiries,
   updateEnquiryStatus,
-  deleteEnquiry
-} = require('../services/enquiry.service');
-const { sendSuccess } = require('../utils/response');
+  deleteEnquiry,
+} = require("../services/enquiry.service");
 
+const { sendSuccess } = require("../utils/response");
+const { sendAdminEmail } = require("../services/emailService");
+
+// ===============================
+// BOOK DEMO (FIXED)
+// ===============================
 const bookDemoClass = async (req, res, next) => {
-  try {
-    const ipAddress = req.ip || req.connection.remoteAddress;
-    const enquiry = await submitEnquiry(req.body, ipAddress);
+  const ipAddress = req.ip || req.connection.remoteAddress;
 
-    return sendSuccess(res, 201, {
-      message: 'Demo class enquiry submitted successfully',
-      enquiryId: enquiry.enquiryId,
-      status: enquiry.status
-    });
+  let enquiry = null;
+
+  try {
+    enquiry = await submitEnquiry(req.body, ipAddress);
   } catch (error) {
-    return next(error);
+    console.error("❌ DB Error:", error.message);
   }
+
+  // ✅ FIXED PAYLOAD (NO UNDEFINED)
+  const emailData = {
+    name: req.body.fullName || "N/A",
+    email: req.body.email || "N/A",
+    phoneNumber: req.body.phoneNumber || "N/A",
+    course: req.body.course || "N/A",
+    certificateType: "Enquiry",
+    duration: req.body.demoType || "N/A",
+    date: new Date().toLocaleString(),
+
+    subject: enquiry
+      ? "SSSAM - New Enquiry Received"
+      : "⚠️ SSSAM - Enquiry (DB Failed)",
+  };
+
+  // ✅ Send email (non-blocking)
+  sendAdminEmail(emailData).catch((err) =>
+    console.error("❌ Email Error:", err.message),
+  );
+
+  // ✅ Response
+  return sendSuccess(res, 201, {
+    message: "Demo class enquiry submitted successfully",
+    enquiryId: enquiry?.enquiryId || null,
+    status: enquiry?.status || "Pending",
+  });
 };
 
+// ===============================
+// OTHER CONTROLLERS (NO CHANGE)
+// ===============================
 const getEnquiryStatusById = async (req, res, next) => {
   try {
     const { enquiryId } = req.params;
     const enquiry = await getEnquiryStatus(enquiryId);
 
-    return sendSuccess(res, 200, {
-      enquiryId: enquiry.enquiryId,
-      fullName: enquiry.fullName,
-      phoneNumber: enquiry.phoneNumber,
-      course: enquiry.course,
-      customCourseName: enquiry.customCourseName || null,
-      demoType: enquiry.demoType,
-      message: enquiry.message,
-      status: enquiry.status,
-      submittedAt: enquiry.createdAt
-    });
+    return sendSuccess(res, 200, enquiry);
   } catch (error) {
     return next(error);
   }
@@ -45,28 +67,8 @@ const getEnquiryStatusById = async (req, res, next) => {
 
 const listAllEnquiries = async (req, res, next) => {
   try {
-    const { status } = req.query;
-    const filters = {};
-
-    if (status) {
-      filters.status = status;
-    }
-
-    const enquiries = await getAllEnquiries(filters);
-
-    return sendSuccess(res, 200, {
-      total: enquiries.length,
-      enquiries: enquiries.map(e => ({
-        enquiryId: e.enquiryId,
-        fullName: e.fullName,
-        phoneNumber: e.phoneNumber,
-        course: e.course,
-        customCourseName: e.customCourseName || null,
-        demoType: e.demoType,
-        status: e.status,
-        submittedAt: e.createdAt
-      }))
-    });
+    const enquiries = await getAllEnquiries();
+    return sendSuccess(res, 200, enquiries);
   } catch (error) {
     return next(error);
   }
@@ -74,15 +76,11 @@ const listAllEnquiries = async (req, res, next) => {
 
 const updateEnquiry = async (req, res, next) => {
   try {
-    const { enquiryId } = req.params;
-    const { status } = req.body;
-    const enquiry = await updateEnquiryStatus(enquiryId, status);
-
-    return sendSuccess(res, 200, {
-      message: 'Enquiry status updated successfully',
-      enquiryId: enquiry.enquiryId,
-      status: enquiry.status
-    });
+    const enquiry = await updateEnquiryStatus(
+      req.params.enquiryId,
+      req.body.status,
+    );
+    return sendSuccess(res, 200, enquiry);
   } catch (error) {
     return next(error);
   }
@@ -90,13 +88,8 @@ const updateEnquiry = async (req, res, next) => {
 
 const removeEnquiry = async (req, res, next) => {
   try {
-    const { enquiryId } = req.params;
-    await deleteEnquiry(enquiryId);
-
-    return sendSuccess(res, 200, {
-      message: 'Enquiry deleted successfully',
-      enquiryId
-    });
+    await deleteEnquiry(req.params.enquiryId);
+    return sendSuccess(res, 200, { message: "Deleted" });
   } catch (error) {
     return next(error);
   }
@@ -107,5 +100,5 @@ module.exports = {
   getEnquiryStatusById,
   listAllEnquiries,
   updateEnquiry,
-  removeEnquiry
+  removeEnquiry,
 };

@@ -1,6 +1,6 @@
 const CertificateApplication = require("../models/CertificateApplication");
 const CertificateRecord = require("../models/CertificateRecord");
-const { sendEmail } = require("./email.service");
+const { sendEmail } = require("./emailService");
 const { generateApplicationId } = require("../utils/appId");
 const { generateCertificateNumber } = require("../utils/certNumber");
 const { getStudentEmailTemplate } = require("./emailTemplates");

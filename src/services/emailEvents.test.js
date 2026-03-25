@@ -3,7 +3,7 @@ require('dotenv').config();
 const {
   sendStudentEmail,
   sendAdminEmail
-} = require('./email.service');
+} = require('./emailService');
 
 async function runEmailTest() {
   try {
