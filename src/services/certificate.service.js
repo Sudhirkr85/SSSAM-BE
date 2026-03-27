@@ -1,16 +1,42 @@
 const CertificateApplication = require("../models/CertificateApplication");
 const CertificateRecord = require("../models/CertificateRecord");
-const { sendEmail } = require("./emailService");
+
+const { sendStudentEmail } = require("./emailService");
+
 const { generateApplicationId } = require("../utils/appId");
 const { generateCertificateNumber } = require("../utils/certNumber");
-const { getStudentEmailTemplate } = require("./emailTemplates");
 const createHttpError = require("http-errors");
 
-// ✅ Helpers
+// =============================
+// ✅ HELPERS
+// =============================
+
 const normalizeText = (text) => text?.toString().trim();
 
 const escapeRegex = (text) => {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+// 🇮🇳 Indian Date
+const formatIndianDate = (date) => {
+  if (!date) return null;
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(date));
+};
+
+// ✅ Non-blocking email
+const sendEmailAsync = (fn) => {
+  setImmediate(async () => {
+    try {
+      await fn();
+      console.log("✅ Email sent");
+    } catch (err) {
+      console.error("❌ Email failed:", err.message);
+    }
+  });
 };
 
 // =============================
@@ -44,23 +70,22 @@ const applyForCertificate = async (payload) => {
     applicationId,
   });
 
-  // ✅ NON-BLOCKING EMAIL
-  setImmediate(() => {
-    sendEmail({
-      to: created.email,
+  // 📧 Student Email
+  sendEmailAsync(() =>
+    sendStudentEmail({
+      name: created.fullName,
+      email: created.email,
+      phoneNumber: created.phoneNumber,
+      course: created.course,
+      certificateType: created.certificateType,
+      applicationId: created.applicationId,
+      duration: created.duration,
+      status: "Pending",
       subject: "Application Submitted - SSSAM Academy",
-      html: getStudentEmailTemplate({
-        name: created.fullName,
-        course: created.course,
-        certificateType: created.certificateType,
-        applicationId: created.applicationId,
-        duration: created.duration,
-        status: "Pending",
-        statusMessage: "Your application has been successfully submitted.",
-        date: new Date().toLocaleString(),
-      }),
-    }).catch((err) => console.error("Email error:", err));
-  });
+      statusMessage: "Your application has been successfully submitted.",
+      date: formatIndianDate(new Date()),
+    }),
+  );
 
   return created;
 };
@@ -98,27 +123,25 @@ const approveApplication = async (applicationId) => {
       status: "Verified",
       applicationId: application._id,
     },
-    { upsert: true }
+    { upsert: true },
   );
 
-  // ✅ NON-BLOCKING EMAIL
-  setImmediate(() => {
-    sendEmail({
-      to: application.email,
+  // 📧 Email
+  sendEmailAsync(() =>
+    sendStudentEmail({
+      name: application.fullName,
+      email: application.email,
+      course: application.course,
+      certificateType: application.certificateType,
+      applicationId: application.applicationId,
+      certificateNumber: application.certificateNumber,
+      duration: application.duration,
+      status: "Approved",
       subject: "Application Approved - SSSAM Academy",
-      html: getStudentEmailTemplate({
-        name: application.fullName,
-        course: application.course,
-        certificateType: application.certificateType,
-        applicationId: application.applicationId,
-        certificateNumber: application.certificateNumber,
-        duration: application.duration,
-        status: "Approved",
-        statusMessage: "Your certificate has been generated.",
-        date: new Date().toLocaleString(),
-      }),
-    }).catch((err) => console.error("Email error:", err));
-  });
+      statusMessage: "Your certificate has been generated.",
+      date: formatIndianDate(application.issueDate),
+    }),
+  );
 
   return application;
 };
@@ -133,7 +156,10 @@ const verifyCertificate = async (certificateNumber) => {
     throw createHttpError(404, "Certificate not found");
   }
 
-  return record;
+  const data = record.toObject();
+  data.issueDate = formatIndianDate(data.issueDate);
+
+  return data;
 };
 
 // =============================
@@ -146,7 +172,13 @@ const getApplicationStatus = async (applicationId) => {
     throw createHttpError(404, "Application not found");
   }
 
-  return application;
+  const data = application.toObject();
+
+  if (data.issueDate) {
+    data.issueDate = formatIndianDate(data.issueDate);
+  }
+
+  return data;
 };
 
 // =============================
@@ -189,5 +221,5 @@ module.exports = {
   verifyCertificate,
   getApplicationStatus,
   rejectApplication,
-  getCertificateForDownload
+  getCertificateForDownload,
 };
