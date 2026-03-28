@@ -114,13 +114,13 @@ module.exports = {
   // ❌ REJECT
   // =========================
   async rejectApplication(id, reason) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new Error("Invalid ID");
+    if (!id) {
+      throw new Error("Application ID required");
     }
-
     if (!reason) throw new Error("Rejection reason required");
 
-    const app = await CertificateApplication.findById(id);
+    // Find by applicationId (string)
+    const app = await CertificateApplication.findOne({ applicationId: id });
 
     if (!app) throw new Error("Application not found");
 

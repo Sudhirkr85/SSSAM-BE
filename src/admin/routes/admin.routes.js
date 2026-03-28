@@ -19,7 +19,7 @@ router.get("/applications/:id", adminCertificateController.getApplication);
 router.put("/applications/:id", adminCertificateController.updateApplication);
 
 // Approve application
-router.post("/applications/:id/approve", adminCertificateController.approveApplication);
+// router.post("/applications/:id/approve", adminCertificateController.approveApplication);
 
 // Reject application
 router.post("/applications/:id/reject", adminCertificateController.rejectApplication);
