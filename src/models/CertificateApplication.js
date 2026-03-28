@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const certificateApplicationSchema = new mongoose.Schema(
   {
@@ -6,71 +6,95 @@ const certificateApplicationSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true
+      trim: true,
     },
     fullName: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     phoneNumber: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     email: {
       type: String,
       required: true,
       trim: true,
-      lowercase: true
+      lowercase: true,
     },
     dateOfBirth: {
       type: Date,
-      required: true
+      required: true,
     },
     address: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     course: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     certificateType: {
       type: String,
       required: true,
-      enum: ['Training', 'Workshop', 'Internship']
+      enum: ["Training", "Workshop", "Internship"],
     },
     duration: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
+
+    // ✅ UPDATED STATUS (support both old + new)
     status: {
       type: String,
-      enum: ['Pending', 'Approved', 'Rejected'],
-      default: 'Pending'
+      enum: [
+        "Pending",
+        "Approved",
+        "Rejected",
+        "pending",
+        "approved",
+        "rejected",
+      ],
+      default: "Pending",
     },
+
     certificateNumber: {
       type: String,
       default: null,
-      trim: true
+      trim: true,
     },
     issueDate: {
       type: Date,
-      default: null
+      default: null,
     },
     remarks: {
       type: String,
       default: null,
-      trim: true
-    }
+      trim: true,
+    },
+
+    // 🔥 NEW FIELDS (ADMIN)
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
+    rejectionReason: {
+      type: String,
+      default: null,
+      trim: true,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 certificateApplicationSchema.index({ fullName: 1, email: 1, phoneNumber: 1 });
 
-module.exports = mongoose.model('CertificateApplication', certificateApplicationSchema);
+module.exports = mongoose.model(
+  "CertificateApplication",
+  certificateApplicationSchema,
+);

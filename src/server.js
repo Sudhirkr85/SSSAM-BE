@@ -4,7 +4,7 @@ const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
-
+const adminRoutes = require("./admin/routes/admin.routes");
 const connectDB = require("./config/db");
 const certificateRoutes = require("./routes/certificate.routes");
 const enquiryRoutes = require("./routes/enquiry.routes");
@@ -35,6 +35,8 @@ if (process.env.NODE_ENV !== "test") {
 app.get("/", (_req, res) => {
   return res.status(200).json({ success: true, message: "API is running." });
 });
+
+app.use("/api/admin", adminRoutes);
 
 app.use("/api/certificate", certificateRoutes);
 app.use("/api/enquiry", enquiryRoutes);

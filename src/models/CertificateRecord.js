@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const certificateRecordSchema = new mongoose.Schema(
   {
@@ -6,51 +6,66 @@ const certificateRecordSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true
+      trim: true,
     },
     fullName: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     dateOfBirth: {
       type: Date,
-      required: true
+      required: true,
     },
     course: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     certificateType: {
       type: String,
       required: true,
-      enum: ['Training', 'Workshop', 'Internship']
+      enum: ["Training", "Workshop", "Internship"],
     },
     duration: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     issueDate: {
       type: Date,
-      required: true
+      required: true,
     },
     instituteName: {
       type: String,
-      default: 'SSSAM Academy'
+      default: "SSSAM Academy",
     },
     status: {
       type: String,
-      default: 'Verified'
+      default: "Verified",
     },
     applicationId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'CertificateApplication',
-      required: true
-    }
+      ref: "CertificateApplication",
+      required: true,
+    },
+
+    // 🔥 NEW ADMIN FIELDS
+    adminStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    approvedAt: {
+      type: Date,
+      default: null,
+    },
+    rejectionReason: {
+      type: String,
+      default: null,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
-module.exports = mongoose.model('CertificateRecord', certificateRecordSchema);
+module.exports = mongoose.model("CertificateRecord", certificateRecordSchema);

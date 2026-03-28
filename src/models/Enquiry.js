@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const enquirySchema = new mongoose.Schema(
   {
@@ -6,53 +6,74 @@ const enquirySchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
-      trim: true
+      trim: true,
     },
     fullName: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     phoneNumber: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     course: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
     customCourseName: {
       type: String,
       trim: true,
-      required: function requiredCustomCourseName() {
-        return this.course === 'Others';
-      }
+      required: function () {
+        return this.course === "Others";
+      },
     },
     demoType: {
       type: String,
       required: true,
-      enum: ['Online', 'Live Classes', 'Offline (Gurugram)']
+      enum: ["Online", "Live Classes", "Offline (Gurugram)"],
     },
     message: {
       type: String,
       trim: true,
-      default: ''
+      default: "",
     },
+
+    // OLD STATUS (DO NOT TOUCH)
     status: {
       type: String,
-      enum: ['Pending', 'Scheduled', 'Completed', 'Cancelled'],
-      default: 'Pending'
+      enum: ["Pending", "Scheduled", "Completed", "Cancelled"],
+      default: "Pending",
     },
+
     ipAddress: {
       type: String,
-      trim: true
-    }
+      trim: true,
+    },
+
+    // 🔥 NEW ADMIN FIELDS
+    adminStatus: {
+      type: String,
+      enum: ["new", "follow_up", "done"],
+      default: "new",
+    },
+    followUpDate: {
+      type: Date,
+      default: null,
+    },
+    comment: {
+      type: String,
+      default: null,
+    },
+    interestStatus: {
+      type: String,
+      enum: ["interested", "not_interested"],
+      default: null,
+    },
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true },
 );
 
-module.exports = mongoose.model('Enquiry', enquirySchema);
+module.exports = mongoose.model("Enquiry", enquirySchema);
