@@ -1,7 +1,17 @@
 const CertificateApplication = require("../../models/CertificateApplication");
 const CertificateRecord = require("../../models/CertificateRecord");
 const { Types } = require("mongoose");
+const { sendStudentEmail } = require("../../services/emailService");
 
+// 🇮🇳 Indian Date
+const formatIndianDate = (date) => {
+  if (!date) return null;
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(date));
+};
 // 🔍 Search
 function buildSearchQuery(search) {
   if (!search) return {};
@@ -9,6 +19,18 @@ function buildSearchQuery(search) {
     fullName: { $regex: search, $options: "i" },
   };
 }
+
+// ✅ Non-blocking email
+const sendEmailAsync = (fn) => {
+  setImmediate(async () => {
+    try {
+      await fn();
+      console.log("✅ Email sent");
+    } catch (err) {
+      console.error("❌ Email failed:", err.message);
+    }
+  });
+};
 
 module.exports = {
   // =========================
@@ -131,7 +153,19 @@ module.exports = {
     app.status = "Rejected";
     app.rejectionReason = reason;
 
-    await app.save();
+    const application = await app.save();
+    // 📧 Email
+    sendEmailAsync(() =>
+      sendStudentEmail({
+        name: application?.fullName || "",
+        email: application?.email || "",
+        course: application?.course || "",
+        status: "Rejected",
+        subject: "Application Rejected - SSSAM Academy",
+        statusMessage: "Your application has been rejected.",
+        reason,
+      }),
+    );
 
     return app;
   },
