@@ -47,7 +47,17 @@ const verifyCertificateByNumber = async (req, res, next) => {
 
     const record = await verifyCertificate(certificateNumber);
 
-    return sendSuccess(res, 200, record);
+    const responseData = {
+      studentName: record.fullName,
+      course: record.course,
+      certificateType: record.certificateType,
+      status: record.status,
+      certificateNumber: record.certificateNumber,
+      issueDate: record.issueDate,
+    };
+
+    console.log("Verification result:", responseData);
+    return sendSuccess(res, 200, responseData);
   } catch (error) {
     next(error);
   }
@@ -84,14 +94,32 @@ const getStatusByApplicationId = async (req, res, next) => {
   try {
     const { applicationId } = req.params;
 
+    if (!applicationId) {
+      return res.status(400).json({ message: "Application ID is required" });
+    }
+
     const application = await getApplicationStatus(applicationId);
 
-    return sendSuccess(res, 200, application);
+    if (!application) {
+      return res.status(404).json({ message: "Application not found" });
+    }
+
+    const responseData = {
+      name: application?.fullName||application?.name,
+      course: application?.course,
+      certificateType: application?.certificateType,
+      status: application?.status,
+      ...(application?.status?.toLowerCase() === "approved" && {
+        certificateNumber: application?.certificateNumber,
+        issueDate: application.issueDate,
+      }),
+    };
+
+    return sendSuccess(res, 200, responseData);
   } catch (error) {
     next(error);
   }
 };
-
 // APPROVE
 const approveApplicationByAdmin = async (req, res, next) => {
   try {
