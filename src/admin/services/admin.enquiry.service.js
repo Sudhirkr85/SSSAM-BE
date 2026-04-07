@@ -97,17 +97,26 @@ module.exports = {
   },
 
   async updateStatus(enquiryId, status) {
-    const normalizedStatus = String(status || "").trim();
-    const allowedStatuses = ["Pending", "Scheduled", "Completed", "Cancelled"];
+    const normalizedStatus = normalize(status);
+    const publicStatuses = ["pending", "scheduled", "completed", "cancelled"];
+    const adminStatuses = ["new", "contacted", "follow_up", "converted", "rejected"];
 
-    if (!allowedStatuses.includes(normalizedStatus)) {
-      const error = new Error("status must be one of Pending, Scheduled, Completed, Cancelled");
+    if (!publicStatuses.includes(normalizedStatus) && !adminStatuses.includes(normalizedStatus)) {
+      const error = new Error(
+        "status must be one of Pending, Scheduled, Completed, Cancelled, new, contacted, follow_up, converted, rejected",
+      );
       error.statusCode = 400;
       throw error;
     }
 
     const enquiry = await getEnquiryByHumanId(enquiryId);
-    enquiry.status = normalizedStatus;
+
+    if (publicStatuses.includes(normalizedStatus)) {
+      enquiry.status = normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
+    } else {
+      enquiry.adminStatus = normalizedStatus;
+    }
+
     await enquiry.save();
 
     return enquiry.toObject();
