@@ -7,6 +7,7 @@ const submitEnquiry = async (enquiryData, ipAddress) => {
   const enquiry = new Enquiry({
     enquiryId,
     fullName: enquiryData.fullName,
+    email: enquiryData.email || null,
     phoneNumber: enquiryData.phoneNumber,
     course: enquiryData.course,
     customCourseName: enquiryData.customCourseName || "",

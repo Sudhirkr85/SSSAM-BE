@@ -5,6 +5,9 @@ const enquirySchema = Joi.object({
     'string.empty': 'Full name is required',
     'any.required': 'Full name is required'
   }),
+  email: Joi.string().trim().email().optional().allow('', null).messages({
+    'string.email': 'Enter a valid email address'
+  }),
   phoneNumber: Joi.string().trim().required().pattern(/^[0-9]{10}$/).messages({
     'string.empty': 'Phone number is required',
     'any.required': 'Phone number is required',

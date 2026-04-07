@@ -1,42 +1,47 @@
 const express = require("express");
-
+const authMiddleware = require("../../middleware/auth");
+const adminAuthController = require("../controllers/admin.auth.controller");
 const adminCertificateController = require("../controllers/admin.certificate.controller");
 const adminEnquiryController = require("../controllers/admin.enquiry.controller");
 
 const router = express.Router();
 
-// ===============================
-// 📄 APPLICATION ROUTES (NEW)
-// ===============================
+router.post("/auth/login", adminAuthController.login);
 
-// Get all applications
+router.use(authMiddleware);
+
 router.get("/applications", adminCertificateController.listApplications);
-
-// Get single application
-router.get("/applications/:id", adminCertificateController.getApplication);
-
-// Update application
-router.put("/applications/:id", adminCertificateController.updateApplication);
-
-// Approve application
-// router.post("/applications/:id/approve", adminCertificateController.approveApplication);
-
-// Reject application
-router.post("/applications/:id/reject", adminCertificateController.rejectApplication);
-
-// ===============================
-// 📄 FINAL CERTIFICATES (APPROVED ONLY)
-// ===============================
+router.get("/applications/:applicationId", adminCertificateController.getApplication);
+router.patch(
+  "/applications/:applicationId/approve",
+  adminCertificateController.approveApplication,
+);
+router.patch(
+  "/applications/:applicationId/reject",
+  adminCertificateController.rejectApplication,
+);
+router.patch(
+  "/applications/:applicationId/update",
+  adminCertificateController.updateApplication,
+);
 
 router.get("/certificates", adminCertificateController.listCertificates);
-
-// ===============================
-// 📄 ENQUIRY ROUTES
-// ===============================
+router.patch(
+  "/certificates/:certificateNumber",
+  adminCertificateController.updateCertificate,
+);
 
 router.get("/enquiries", adminEnquiryController.listEnquiries);
-router.get("/enquiries/:id", adminEnquiryController.getEnquiry);
-router.post("/enquiries/:id/mark-done", adminEnquiryController.markDone);
-router.post("/enquiries/:id/follow-up", adminEnquiryController.followUp);
+router.get("/enquiries/:enquiryId", adminEnquiryController.getEnquiry);
+router.patch(
+  "/enquiries/:enquiryId/status",
+  adminEnquiryController.updateStatus,
+);
+router.patch(
+  "/enquiries/:enquiryId/follow-up",
+  adminEnquiryController.followUp,
+);
+router.patch("/enquiries/:enquiryId/close", adminEnquiryController.closeEnquiry);
+router.delete("/enquiries/:enquiryId", adminEnquiryController.deleteEnquiry);
 
 module.exports = router;

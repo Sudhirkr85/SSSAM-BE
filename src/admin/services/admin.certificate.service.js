@@ -1,199 +1,331 @@
 const CertificateApplication = require("../../models/CertificateApplication");
 const CertificateRecord = require("../../models/CertificateRecord");
-const { Types } = require("mongoose");
-const { sendStudentEmail } = require("../../services/emailService");
+const { generateCertificateNumber } = require("../../utils/certNumber");
 
-// 🇮🇳 Indian Date
-const formatIndianDate = (date) => {
-  if (!date) return null;
-  return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(date));
-};
-// 🔍 Search
-function buildSearchQuery(search) {
-  if (!search) return {};
+const APP_ALLOWED_STATUSES = ["pending", "approved", "rejected"];
+
+const parsePagination = (page, limit) => {
+  const parsedPage = Math.max(1, Number.parseInt(page, 10) || 1);
+  const parsedLimit = Math.min(100, Math.max(1, Number.parseInt(limit, 10) || 10));
   return {
-    fullName: { $regex: search, $options: "i" },
+    page: parsedPage,
+    limit: parsedLimit,
+    skip: (parsedPage - 1) * parsedLimit,
   };
-}
+};
 
-// ✅ Non-blocking email
-const sendEmailAsync = (fn) => {
-  setImmediate(async () => {
-    try {
-      await fn();
-      console.log("✅ Email sent");
-    } catch (err) {
-      console.error("❌ Email failed:", err.message);
-    }
-  });
+const normalizeStatus = (statusValue) => {
+  return String(statusValue || "").trim().toLowerCase();
+};
+
+const validateApplicationStatusFilter = (status) => {
+  if (!status) {
+    return null;
+  }
+
+  const normalized = normalizeStatus(status);
+
+  if (!APP_ALLOWED_STATUSES.includes(normalized)) {
+    const error = new Error("Invalid status filter");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  return normalized;
+};
+
+const buildApplicationQuery = ({ search, status }) => {
+  const query = {};
+
+  if (search) {
+    const searchRegex = new RegExp(search, "i");
+    query.$or = [
+      { fullName: searchRegex },
+      { email: searchRegex },
+      { phoneNumber: searchRegex },
+    ];
+  }
+
+  const normalizedStatus = validateApplicationStatusFilter(status);
+  if (normalizedStatus) {
+    query.status = new RegExp(`^${normalizedStatus}$`, "i");
+  }
+
+  return query;
+};
+
+const buildCertificateSearchMatch = (search) => {
+  if (!search) {
+    return {};
+  }
+
+  const searchRegex = new RegExp(search, "i");
+  return {
+    $or: [
+      { fullName: searchRegex },
+      { certificateNumber: searchRegex },
+      { "application.email": searchRegex },
+      { "application.phoneNumber": searchRegex },
+    ],
+  };
+};
+
+const getApplicationByHumanId = async (applicationId) => {
+  if (!applicationId) {
+    const error = new Error("applicationId is required");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const application = await CertificateApplication.findOne({ applicationId });
+
+  if (!application) {
+    const error = new Error("Application not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  return application;
+};
+
+const buildCertificatePayloadFromApplication = (application) => {
+  return {
+    certificateNumber: application.certificateNumber,
+    fullName: application.fullName,
+    dateOfBirth: application.dateOfBirth,
+    course: application.course,
+    certificateType: application.certificateType,
+    duration: application.duration,
+    issueDate: application.issueDate,
+    instituteName: "SSSAM Academy",
+    status: "Verified",
+    applicationId: application._id,
+  };
 };
 
 module.exports = {
-  // =========================
-  // 📄 APPLICATION LIST
-  // =========================
-  async listApplications({ page = 1, limit = 10, search = "" }) {
-    const parsedPage = parseInt(page);
-    const parsedLimit = parseInt(limit);
-
-    const skip = (parsedPage - 1) * parsedLimit;
-    const query = buildSearchQuery(search);
+  async listApplications({ page = 1, limit = 10, search = "", status = "" }) {
+    const { skip, page: parsedPage, limit: parsedLimit } = parsePagination(page, limit);
+    const query = buildApplicationQuery({ search, status });
 
     const [data, total] = await Promise.all([
       CertificateApplication.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(parsedLimit),
-
+        .limit(parsedLimit)
+        .lean(),
       CertificateApplication.countDocuments(query),
     ]);
 
     return {
       data,
-      total,
-      page: parsedPage,
-      totalPages: Math.ceil(total / parsedLimit),
+      pagination: {
+        page: parsedPage,
+        totalPages: Math.max(1, Math.ceil(total / parsedLimit)),
+        total,
+      },
     };
   },
 
-  // =========================
-  // 📄 SINGLE APPLICATION
-  // =========================
-  async getApplication(id) {
-    if (!Types.ObjectId.isValid(id)) return null;
-    return CertificateApplication.findById(id);
+  async getApplication(applicationId) {
+    const application = await getApplicationByHumanId(applicationId);
+    return application.toObject();
   },
 
-  // =========================
-  // ✏️ UPDATE (ONLY PENDING)
-  // =========================
-  async updateApplication(id, updateData) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new Error("Invalid ID");
+  async approveApplication(applicationId) {
+    const application = await getApplicationByHumanId(applicationId);
+
+    if (normalizeStatus(application.status) !== "pending") {
+      const error = new Error("Only pending applications can be approved");
+      error.statusCode = 400;
+      throw error;
     }
 
-    const app = await CertificateApplication.findById(id);
-
-    if (!app) throw new Error("Application not found");
-
-    if (app.status !== "Pending") {
-      throw new Error("Only pending applications can be edited");
+    if (!application.certificateNumber) {
+      application.certificateNumber = await generateCertificateNumber();
     }
 
-    Object.assign(app, updateData);
-    await app.save();
+    application.status = "Approved";
+    application.issueDate = new Date();
 
-    return app;
-  },
+    await application.save();
 
-  // =========================
-  // ✅ APPROVE
-  // =========================
-  async approveApplication(id) {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new Error("Invalid ID");
-    }
-
-    const app = await CertificateApplication.findById(id);
-
-    if (!app) throw new Error("Application not found");
-
-    if (app.status !== "Pending") {
-      throw new Error("Only pending applications can be approved");
-    }
-
-    app.status = "Approved";
-    app.issueDate = new Date();
-
-    await app.save();
-
-    // Create certificate record
     await CertificateRecord.updateOne(
-      { certificateNumber: app.certificateNumber },
-      {
-        certificateNumber: app.certificateNumber,
-        fullName: app.fullName,
-        dateOfBirth: app.dateOfBirth,
-        course: app.course,
-        certificateType: app.certificateType,
-        duration: app.duration,
-        issueDate: app.issueDate,
-        instituteName: "SSSAM Academy",
-        status: "Verified",
-        applicationId: app._id,
-      },
+      { certificateNumber: application.certificateNumber },
+      buildCertificatePayloadFromApplication(application),
       { upsert: true },
     );
 
-    return app;
+    return application.toObject();
   },
 
-  // =========================
-  // ❌ REJECT
-  // =========================
-  async rejectApplication(id, reason) {
-    if (!id) {
-      throw new Error("Application ID required");
-    }
-    if (!reason) throw new Error("Rejection reason required");
-
-    // Find by applicationId (string)
-    const app = await CertificateApplication.findOne({ applicationId: id });
-
-    if (!app) throw new Error("Application not found");
-
-    if (app.status !== "Pending") {
-      throw new Error("Only pending applications can be rejected");
+  async rejectApplication(applicationId, reason) {
+    if (!reason || !String(reason).trim()) {
+      const error = new Error("reason is required");
+      error.statusCode = 400;
+      throw error;
     }
 
-    app.status = "Rejected";
-    app.rejectionReason = reason;
+    const application = await getApplicationByHumanId(applicationId);
 
-    const application = await app.save();
-    // 📧 Email
-    sendEmailAsync(() =>
-      sendStudentEmail({
-        name: application?.fullName || "",
-        email: application?.email || "",
-        course: application?.course || "",
-        status: "Rejected",
-        subject: "Application Rejected - SSSAM Academy",
-        statusMessage: "Your application has been rejected.",
-        reason,
-      }),
+    if (normalizeStatus(application.status) !== "pending") {
+      const error = new Error("Only pending applications can be rejected");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    application.status = "Rejected";
+    application.rejectionReason = String(reason).trim();
+    await application.save();
+
+    return application.toObject();
+  },
+
+  async updateApplication(applicationId, payload = {}) {
+    const application = await getApplicationByHumanId(applicationId);
+
+    if (normalizeStatus(application.status) !== "pending") {
+      const error = new Error("Only pending applications can be edited");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const allowedUpdates = {
+      fullName: payload.name,
+      course: payload.course,
+      duration: payload.duration,
+    };
+
+    const updates = Object.entries(allowedUpdates).filter(
+      ([, value]) => value !== undefined && value !== null && String(value).trim() !== "",
     );
 
-    return app;
+    if (!updates.length) {
+      const error = new Error("No valid fields provided for update");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    updates.forEach(([key, value]) => {
+      application[key] = String(value).trim();
+    });
+
+    await application.save();
+    return application.toObject();
   },
 
-  // =========================
-  // 📄 FINAL CERTIFICATES
-  // =========================
-  async listCertificates({ page = 1, limit = 10, search = "" }) {
-    const parsedPage = parseInt(page);
-    const parsedLimit = parseInt(limit);
+  async listCertificates({ page = 1, limit = 10, search = "", status = "" }) {
+    const { skip, page: parsedPage, limit: parsedLimit } = parsePagination(page, limit);
 
-    const skip = (parsedPage - 1) * parsedLimit;
-    const query = buildSearchQuery(search);
+    const statusMatch = status
+      ? { status: new RegExp(`^${String(status).trim()}$`, "i") }
+      : {};
 
-    const [data, total] = await Promise.all([
-      CertificateRecord.find(query)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parsedLimit),
+    const searchMatch = buildCertificateSearchMatch(search);
 
-      CertificateRecord.countDocuments(query),
-    ]);
+    const pipeline = [
+      {
+        $lookup: {
+          from: "certificateapplications",
+          localField: "applicationId",
+          foreignField: "_id",
+          as: "application",
+        },
+      },
+      {
+        $unwind: {
+          path: "$application",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $match: {
+          ...statusMatch,
+          ...searchMatch,
+        },
+      },
+      {
+        $sort: { createdAt: -1 },
+      },
+      {
+        $facet: {
+          data: [
+            { $skip: skip },
+            { $limit: parsedLimit },
+          ],
+          meta: [{ $count: "total" }],
+        },
+      },
+    ];
+
+    const [result] = await CertificateRecord.aggregate(pipeline);
+    const total = result?.meta?.[0]?.total || 0;
 
     return {
-      data,
-      total,
-      page: parsedPage,
-      totalPages: Math.ceil(total / parsedLimit),
+      data: result?.data || [],
+      pagination: {
+        page: parsedPage,
+        totalPages: Math.max(1, Math.ceil(total / parsedLimit)),
+        total,
+      },
     };
+  },
+
+  async updateCertificate(certificateNumber, payload = {}) {
+    if (!certificateNumber) {
+      const error = new Error("certificateNumber is required");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const certificate = await CertificateRecord.findOne({ certificateNumber });
+
+    if (!certificate) {
+      const error = new Error("Certificate not found");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const editableFields = [
+      "fullName",
+      "course",
+      "duration",
+      "certificateType",
+      "status",
+      "instituteName",
+      "issueDate",
+      "dateOfBirth",
+    ];
+
+    let hasUpdate = false;
+    editableFields.forEach((field) => {
+      if (payload[field] !== undefined) {
+        certificate[field] = payload[field];
+        hasUpdate = true;
+      }
+    });
+
+    if (!hasUpdate) {
+      const error = new Error("No valid fields provided for update");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    await certificate.save();
+
+    await CertificateApplication.updateOne(
+      { _id: certificate.applicationId },
+      {
+        $set: {
+          ...(payload.fullName !== undefined ? { fullName: payload.fullName } : {}),
+          ...(payload.course !== undefined ? { course: payload.course } : {}),
+          ...(payload.duration !== undefined ? { duration: payload.duration } : {}),
+          ...(payload.issueDate !== undefined ? { issueDate: payload.issueDate } : {}),
+          ...(payload.dateOfBirth !== undefined ? { dateOfBirth: payload.dateOfBirth } : {}),
+        },
+      },
+    );
+
+    return certificate.toObject();
   },
 };
