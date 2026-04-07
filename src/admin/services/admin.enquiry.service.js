@@ -97,15 +97,17 @@ module.exports = {
   },
 
   async updateStatus(enquiryId, status) {
-    const normalizedStatus = normalize(status);
-    if (!ALLOWED_ADMIN_STATUSES.includes(normalizedStatus)) {
-      const error = new Error("status must be one of new, contacted, follow_up, converted, rejected");
+    const normalizedStatus = String(status || "").trim();
+    const allowedStatuses = ["Pending", "Scheduled", "Completed", "Cancelled"];
+
+    if (!allowedStatuses.includes(normalizedStatus)) {
+      const error = new Error("status must be one of Pending, Scheduled, Completed, Cancelled");
       error.statusCode = 400;
       throw error;
     }
 
     const enquiry = await getEnquiryByHumanId(enquiryId);
-    enquiry.adminStatus = normalizedStatus;
+    enquiry.status = normalizedStatus;
     await enquiry.save();
 
     return enquiry.toObject();
