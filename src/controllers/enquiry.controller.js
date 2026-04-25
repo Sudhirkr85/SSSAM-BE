@@ -9,6 +9,33 @@ const {
 const { sendSuccess } = require("../utils/response");
 const { sendAdminEmail } = require("../services/emailService");
 
+const CRM_PUBLIC_ENQUIRY_URL =
+  "https://sssam-r3pz.onrender.com/api/enquiries/public/enquiries";
+
+const syncEnquiryToCRM = async (payload) => {
+  const crmPayload = {
+    name: payload.fullName,
+    mobile: payload.phoneNumber,
+    courseInterested: payload.course,
+  };
+
+  if (payload.email) {
+    crmPayload.email = payload.email;
+  }
+
+  const response = await fetch(CRM_PUBLIC_ENQUIRY_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(crmPayload),
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+};
+
 // ===============================
 // BOOK DEMO (FIXED)
 // ===============================
@@ -21,6 +48,12 @@ const bookDemoClass = async (req, res, next) => {
     enquiry = await submitEnquiry(req.body, ipAddress);
   } catch (error) {
     console.error("❌ DB Error:", error.message);
+  }
+
+  if (enquiry) {
+    syncEnquiryToCRM(req.body).catch((error) =>
+      console.error("CRM Sync Error", error.message),
+    );
   }
 
   // ✅ FIXED PAYLOAD (NO UNDEFINED)
