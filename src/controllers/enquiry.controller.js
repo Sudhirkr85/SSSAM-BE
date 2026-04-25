@@ -10,6 +10,7 @@ const { sendSuccess } = require("../utils/response");
 const { sendAdminEmail } = require("../services/emailService");
 
 const CRM_PUBLIC_ENQUIRY_URL =
+  process.env.CRM_PUBLIC_ENQUIRY_URL ||
   "https://sssam-r3pz.onrender.com/api/enquiries/public/enquiries";
 
 const syncEnquiryToCRM = async (payload) => {
@@ -29,6 +30,14 @@ const syncEnquiryToCRM = async (payload) => {
       "Content-Type": "application/json",
     },
     body: JSON.stringify(crmPayload),
+  });
+
+  const responseText = await response.text();
+
+  console.log("CRM Enquiry API Response:", {
+    ok: response.ok,
+    status: response.status,
+    body: responseText,
   });
 
   if (!response.ok) {

@@ -11,7 +11,7 @@ const submitEnquiry = async (enquiryData, ipAddress) => {
     phoneNumber: enquiryData.phoneNumber,
     course: enquiryData.course,
     customCourseName: enquiryData.customCourseName || "",
-    demoType: enquiryData.demoType,
+    demoType: enquiryData.demoType || "Online",
     message: enquiryData.message || "",
     status: "Pending",
     ipAddress,
