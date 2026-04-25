@@ -32,13 +32,7 @@ const syncEnquiryToCRM = async (payload) => {
     body: JSON.stringify(crmPayload),
   });
 
-  const responseText = await response.text();
-
-  console.log("CRM Enquiry API Response:", {
-    ok: response.ok,
-    status: response.status,
-    body: responseText,
-  });
+  await response.text();
 
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);

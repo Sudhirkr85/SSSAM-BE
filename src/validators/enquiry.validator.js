@@ -64,12 +64,6 @@ const validate = (schema, location = 'body') => {
 
     if (error) {
       const messages = error.details.map(d => d.message).join(', ');
-      console.error('Enquiry validation failed:', {
-        path: req.originalUrl,
-        location,
-        errors: messages,
-        payload: source
-      });
       return res.status(400).json({
         success: false,
         statusCode: 400,
