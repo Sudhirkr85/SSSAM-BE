@@ -11,13 +11,13 @@ const { sendAdminEmail } = require("../services/emailService");
 
 const CRM_PUBLIC_ENQUIRY_URL =
   process.env.CRM_PUBLIC_ENQUIRY_URL ||
-  "https://sssam-r3pz.onrender.com/api/enquiries/public/enquiries";
+  "https://sssam-r3pz.onrender.com/api/enquiries/public";
 
 const syncEnquiryToCRM = async (payload) => {
   const crmPayload = {
     name: payload.fullName,
     mobile: payload.phoneNumber,
-    courseInterested: payload.course,
+    course: payload.course,
   };
 
   if (payload.email) {
@@ -47,17 +47,17 @@ const bookDemoClass = async (req, res, next) => {
 
   let enquiry = null;
 
+  // ✅ Save to DB (independent)
   try {
     enquiry = await submitEnquiry(req.body, ipAddress);
   } catch (error) {
     console.error("❌ DB Error:", error.message);
   }
 
-  if (enquiry) {
-    syncEnquiryToCRM(req.body).catch((error) =>
-      console.error("CRM Sync Error", error.message),
-    );
-  }
+  // ✅ Sync to CRM (independent - happens regardless of DB result)
+  syncEnquiryToCRM(req.body).catch((error) =>
+    console.error("CRM Sync Error", error.message),
+  );
 
   // ✅ FIXED PAYLOAD (NO UNDEFINED)
   const emailData = {
