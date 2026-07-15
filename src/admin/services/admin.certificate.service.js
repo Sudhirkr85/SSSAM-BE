@@ -275,6 +275,7 @@ module.exports = {
       certificateType: payload.certificateType,
       duration: payload.duration,
       durationDates: payload.durationDates,
+      issueDate: payload.issueDate,
     };
 
     const updates = Object.entries(allowedUpdates).filter(
@@ -288,7 +289,11 @@ module.exports = {
     }
 
     updates.forEach(([key, value]) => {
-      application[key] = (value === null || value === "") ? "" : String(value).trim();
+      if (key === "dateOfBirth" || key === "issueDate") {
+        application[key] = (value === null || value === "") ? null : new Date(value);
+      } else {
+        application[key] = (value === null || value === "") ? "" : String(value).trim();
+      }
     });
 
     // Handle compound courses/durations matching apply logic
