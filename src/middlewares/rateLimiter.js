@@ -12,6 +12,7 @@ const applyLimiter = rateLimit({
     return req.ip || req.connection.remoteAddress;
   },
   skip: (req, res) => {
+    if (process.env.NODE_ENV === 'development') return true;
     return req.method !== 'POST';
   },
   handler: (req, res, next, options) => {
@@ -35,6 +36,7 @@ const downloadLimiter = rateLimit({
     return req.ip || req.connection.remoteAddress;
   },
   skip: (req, res) => {
+    if (process.env.NODE_ENV === 'development') return true;
     return req.method !== 'POST';
   },
   handler: (req, res, next, options) => {

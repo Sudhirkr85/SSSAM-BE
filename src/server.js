@@ -8,7 +8,6 @@ const adminRoutes = require("./admin/routes/admin.routes");
 const connectDB = require("./config/db");
 const certificateRoutes = require("./routes/certificate.routes");
 const enquiryRoutes = require("./routes/enquiry.routes");
-const courseRoutes = require("./routes/course.routes");
 const organizationRoutes = require("./routes/organization.routes");
 const notFound = require("./middlewares/notFound");
 const errorHandler = require("./middlewares/errorHandler");
@@ -45,7 +44,6 @@ app.use("/api/admin", adminRoutes);
 
 app.use("/api/certificate", certificateRoutes);
 app.use("/api/enquiry", enquiryRoutes);
-app.use("/api/courses", courseRoutes);
 app.use("/api/organizations", organizationRoutes);
 
 
