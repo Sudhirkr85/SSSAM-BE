@@ -519,22 +519,6 @@ const generateCertificatePDF = async (record) => {
     }
     orgName = rawOrg.trim();
     
-    // If it has nested abbreviation e.g. "IITM (Institute of...)" -> format as "Institute of... (IITM)"
-    const nestedParenOpen = orgName.indexOf('(');
-    if (nestedParenOpen > -1) {
-      const abbreviation = orgName.substring(0, nestedParenOpen).trim();
-      let innerOrg = orgName.substring(nestedParenOpen + 1);
-      if (innerOrg.endsWith(')')) {
-        innerOrg = innerOrg.slice(0, -1);
-      }
-      innerOrg = innerOrg.trim();
-      if (abbreviation) {
-        orgName = `${innerOrg} (${abbreviation})`;
-      } else {
-        orgName = innerOrg;
-      }
-    }
-    
     cleanCourse = record.course.substring(0, firstParenOpen).trim().toUpperCase();
   }
 
