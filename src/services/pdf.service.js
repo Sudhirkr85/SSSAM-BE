@@ -387,7 +387,7 @@ const generateCertificatePDF = async (record) => {
       y: (H - wHeight) / 2 + 10,
       width: wWidth,
       height: wHeight,
-      opacity: 0.012
+      opacity: 0.06
     });
   }
 
@@ -562,7 +562,7 @@ const generateCertificatePDF = async (record) => {
     courseParts.push({ text: `${displayDuration} `, bold: true });
     courseParts.push({ text: `Training Program on`, bold: false });
 
-    wishText = "conducted by SSSAM Academy.";
+    wishText = "at SSSAM Academy.";
   } else {
     const certType = safe(record.certificateType).toLowerCase();
     if (certType.includes("internship")) {
@@ -631,16 +631,22 @@ const generateCertificatePDF = async (record) => {
   const sigY = 110; // Setup sigY
 
   // DRAW DURATION RANGE ABOVE SIGNATURES (neatly centered and spaced)
+  let durationLabelText = "";
   if (dateRangeText) {
-    const durationLabelText = `Duration: ${dateRangeText}`;
-    page.drawText(durationLabelText, {
-      x: cx(durationLabelText, bold, 11, W),
-      y: sigY + 38,
-      size: 11,
-      font: bold,
-      color: black
-    });
+    durationLabelText = `Duration: ${dateRangeText.replace(" - ", " – ")}`; // Use en-dash
+  } else {
+    // Format displayDuration (e.g. "3-Month" to "3 Months")
+    let cleanDisp = displayDuration.replace("-Month", " Months").replace("-Day", " Days").replace("-Hour", " Hours");
+    durationLabelText = `Duration: ${cleanDisp}`;
   }
+
+  page.drawText(durationLabelText, {
+    x: cx(durationLabelText, bold, 11, W),
+    y: sigY + 38,
+    size: 11,
+    font: bold,
+    color: black
+  });
 
   // Center gold decorative ornament above footer
   page.drawLine({
@@ -667,7 +673,11 @@ const generateCertificatePDF = async (record) => {
 
   // QR CODE CONTAINER & EMBEDDING (White padded box with gold border to avoid Director signature collision)
   try {
-    const verifyUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/certificate.html?cert=${encodeURIComponent(record.certificateNumber)}`;
+    let clientUrl = process.env.CLIENT_URL;
+    if (!clientUrl || clientUrl === '*' || clientUrl.includes('localhost')) {
+      clientUrl = 'https://www.sssamacademy.com';
+    }
+    const verifyUrl = `${clientUrl}/certificate.html?cert=${encodeURIComponent(record.certificateNumber)}`;
     const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 140 });
     const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
     const qrImage = await pdfDoc.embedPng(qrBuffer);

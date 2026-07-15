@@ -71,8 +71,7 @@ const applyForCertificate = async (payload) => {
   const existingApplication = await CertificateApplication.findOne({
     phoneNumber: normalizedPhoneNumber,
     email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
-    course: { $regex: `^${escapeRegex(normalizedCourse)}$`, $options: "i" },
-    certificateType: normalizedCertificateType,
+    course: { $regex: `^${escapeRegex(normalizedCourse)}$`, $options: "i" }
   }).lean();
 
   if (existingApplication) {

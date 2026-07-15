@@ -1,6 +1,6 @@
 const Joi = require('joi');
 
-const certificateTypes = ['Training', 'Workshop', 'Internship'];
+const certificateTypes = ['Training', 'Workshop', 'Internship', 'Industrial Training', 'Academic Training', 'Corporate Training'];
 
 const applySchema = Joi.object({
   fullName: Joi.string().trim().min(2).max(120).required(),
