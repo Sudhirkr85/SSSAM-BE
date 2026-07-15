@@ -49,7 +49,7 @@ async function downloadNoteAndSaveLead(req, res, next) {
       phoneNumber,
       email: email || null,
       course: course || 'Others',
-      customCourseName: course ? undefined : 'Study Notes Download',
+      customCourseName: (course && course !== 'Others') ? undefined : 'Study Notes Download',
       demoType: 'Online',
       message: `[LEAD FROM STUDY NOTES] Downloaded file: ${note.title}`,
     });
