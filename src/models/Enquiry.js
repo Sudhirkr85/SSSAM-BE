@@ -36,11 +36,7 @@ const enquirySchema = new mongoose.Schema(
         return this.course === "Others";
       },
     },
-    demoType: {
-      type: String,
-      required: true,
-      enum: ["Online", "Live Classes", "Offline (Gurugram)"],
-    },
+
     message: {
       type: String,
       trim: true,

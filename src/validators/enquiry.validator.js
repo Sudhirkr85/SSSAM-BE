@@ -27,14 +27,7 @@ const enquirySchema = Joi.object({
       }),
       otherwise: Joi.optional().allow('', null)
     }),
-  demoType: Joi.string()
-    .trim()
-    .optional()
-    .allow('', null)
-    .valid('Online', 'Live Classes', 'Offline (Gurugram)')
-    .messages({
-      'any.only': 'Invalid demo type selected'
-    }),
+
   message: Joi.string().trim().optional().allow('')
 });
 
