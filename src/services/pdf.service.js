@@ -505,7 +505,7 @@ const generateCertificatePDF = async (record) => {
     rotate: degrees(45)
   });
 
-  curY -= 32;
+  curY -= 48;
 
   // PARSING LOGIC FOR DYNAMIC FIELDS
   let cleanCourse = safe(record.course).toUpperCase();
@@ -604,7 +604,7 @@ const generateCertificatePDF = async (record) => {
   });
 
   // COURSE NAME - Centered on its own line in big bold letters (matches target image!)
-  curY -= 28;
+  curY -= 36;
   page.drawText(cleanCourse, {
     x: cx(cleanCourse, titleFont, 22, W),
     y: curY,
@@ -614,7 +614,7 @@ const generateCertificatePDF = async (record) => {
   });
 
   // DRAW SECOND PORTION OF THE WORDING (wishText)
-  curY -= 20;
+  curY -= 26;
   curY = drawRichCenteredParagraph({
     page,
     parts: [{ text: wishText, bold: false }],
