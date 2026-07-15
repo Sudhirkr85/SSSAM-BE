@@ -68,10 +68,12 @@ const bookDemoClass = async (req, res, next) => {
     console.error("❌ DB Error:", error.message);
   }
 
-  // ✅ Sync to CRM (independent - happens regardless of DB result)
+  // 🚫 CRM Sync disabled during testing phase. Uncomment when going live.
+  /*
   syncEnquiryToCRM(req.body).catch((error) =>
     console.error("CRM Sync Error", error.message),
   );
+  */
 
   // ✅ FIXED PAYLOAD (NO UNDEFINED)
   const emailData = {

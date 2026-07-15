@@ -116,7 +116,7 @@ const getTemplateOptions = (type) => {
       };
     case 'academic training':
       return {
-        title: 'CERTIFICATE OF ACADEMIC TRAINING',
+        title: 'CERTIFICATE OF COMPLETION',
         primaryColor: rgb(0.08, 0.18, 0.36), // Navy
         secondaryColor: rgb(0.15, 0.3, 0.55)
       };
