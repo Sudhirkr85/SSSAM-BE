@@ -3,6 +3,10 @@ const authMiddleware = require("../../middleware/auth");
 const adminAuthController = require("../controllers/admin.auth.controller");
 const adminCertificateController = require("../controllers/admin.certificate.controller");
 const adminEnquiryController = require("../controllers/admin.enquiry.controller");
+const adminPlacementController = require("../../controllers/placement.controller");
+const adminBlogController = require("../../controllers/blog.controller");
+const adminNotesController = require("../../controllers/notes.controller");
+const upload = require("../../middlewares/upload");
 
 const router = express.Router();
 
@@ -43,5 +47,32 @@ router.patch(
 );
 router.patch("/enquiries/:enquiryId/close", adminEnquiryController.closeEnquiry);
 router.delete("/enquiries/:enquiryId", adminEnquiryController.deleteEnquiry);
+
+// Admin Placements routes
+router.get("/placements", adminPlacementController.getAdminPlacements);
+router.post(
+  "/placements",
+  upload.fields([{ name: "photo", maxCount: 1 }, { name: "companyLogo", maxCount: 1 }]),
+  adminPlacementController.createPlacement
+);
+router.put(
+  "/placements/:id",
+  upload.fields([{ name: "photo", maxCount: 1 }, { name: "companyLogo", maxCount: 1 }]),
+  adminPlacementController.updatePlacement
+);
+router.delete("/placements/:id", adminPlacementController.deletePlacement);
+
+// Admin Blogs / Hiring routes
+router.get("/blogs", adminBlogController.getAdminBlogs);
+router.post("/blogs/generate-ai", adminBlogController.generateAIBlog);
+router.post("/blogs", upload.single("image"), adminBlogController.createBlog);
+router.put("/blogs/:id", upload.single("image"), adminBlogController.updateBlog);
+router.delete("/blogs/:id", adminBlogController.deleteBlog);
+
+// Admin Study Notes routes
+router.get("/notes", adminNotesController.getAdminNotes);
+router.post("/notes", upload.single("file"), adminNotesController.createNote);
+router.put("/notes/:id", upload.single("file"), adminNotesController.updateNote);
+router.delete("/notes/:id", adminNotesController.deleteNote);
 
 module.exports = router;
