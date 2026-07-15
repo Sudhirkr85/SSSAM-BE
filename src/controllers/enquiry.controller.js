@@ -9,6 +9,20 @@ const {
 const { sendSuccess } = require("../utils/response");
 const { sendAdminEmail } = require("../services/emailService");
 
+const formatIndianDateTime = (date) => {
+  if (!date) return "N/A";
+  return new Intl.DateTimeFormat("en-IN", {
+    timeZone: "Asia/Kolkata",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true
+  }).format(new Date(date));
+};
+
 const CRM_PUBLIC_ENQUIRY_URL =
   process.env.CRM_PUBLIC_ENQUIRY_URL ||
   "https://sssam-r3pz.onrender.com/api/enquiries/public";
@@ -67,7 +81,7 @@ const bookDemoClass = async (req, res, next) => {
     course: req.body.course || "N/A",
     certificateType: "Enquiry",
     duration: req.body.demoType || "N/A",
-    date: new Date().toLocaleString(),
+    date: formatIndianDateTime(new Date()),
 
     subject: enquiry
       ? "SSSAM - New Enquiry Received"

@@ -127,8 +127,8 @@ function getAdminEmailTemplate(data) {
           </p>
 
           <p><b>Course:</b> ${data.course}</p>
-          <p><b>Certificate Type:</b> ${data.certificateType}</p>
-          <p><b>Duration:</b> ${data.duration}</p>
+          <p><b>Enquiry Type:</b> Demo Class Request</p>
+          <p><b>Class Mode:</b> ${data.duration}</p>
           <p><b>Date:</b> ${data.date}</p>
 
         </div>

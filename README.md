@@ -77,94 +77,161 @@ npm start
 
 ## API Endpoints (Frontend Compatible)
 
-No endpoint URL change is required for your existing frontend.
-
 ### 1) Apply Certificate
-
 `POST /api/certificate/apply`
 
-#### Sample Request
+Submits a new certificate application.
 
-curl -X POST http://localhost:5000/api/certificate/apply \
-  -H "Content-Type: application/json" \
-  -d '{
-    "fullName":"Rahul Kumar",
-    "phoneNumber":"9876543210",
-    "email":"rahul@example.com",
-    "dateOfBirth":"2000-05-20",
-    "address":"Noida, Uttar Pradesh",
-    "course":"Full Stack Development",
-    "certificateType":"Training",
-    "duration":"3 Months"
-  }'
+#### Payloads by Certificate Type:
 
-#### Success Response (201)
-
+##### A) Regular Training (Training) / Internship
+* `qualification` and `organization` keys are completely omitted.
+```json
 {
-  "success": true,
-  "message": "Application Submitted Successfully",
-  "applicationId": "APP000001"
+  "fullName": "Himanshi Yadav",
+  "phoneNumber": "9980776658",
+  "email": "himanshi@example.com",
+  "dateOfBirth": "2003-09-20",
+  "course": "Cybersecurity & Ethical Hacking",
+  "certificateType": "Training",
+  "duration": "3 Months",
+  "durationDates": "June 16th - September 16th 2025"
 }
+```
+
+##### B) Workshop
+* `qualification`, `organization`, and `durationDates` are completely omitted.
+```json
+{
+  "fullName": "Himanshi Yadav",
+  "phoneNumber": "9980776658",
+  "email": "himanshi@example.com",
+  "dateOfBirth": "2003-09-20",
+  "course": "Cybersecurity & Ethical Hacking",
+  "certificateType": "Workshop",
+  "duration": "4 Days"
+}
+```
+
+##### C) College Training (Academic Training) / Corporate Training
+```json
+{
+  "fullName": "Himanshi Yadav",
+  "phoneNumber": "9980776658",
+  "email": "himanshi@example.com",
+  "dateOfBirth": "2003-09-20",
+  "qualification": "B-Tech",
+  "course": "Cybersecurity & Ethical Hacking",
+  "organization": "Institute of Information Technology & Management",
+  "certificateType": "Academic Training",
+  "duration": "100 Hours",
+  "durationDates": "June 16th - July 31st 2025"
+}
+```
+
+---
 
 ### 2) Verify Certificate
+`GET /api/certificate/verify?certificateNumber=SSSAM/CERT/408012`
 
-`GET /api/certificate/verify?certificateNumber=CERT000001`
+Queries certificate authenticity. Automatically supports legacy pre-2026 CSV entries and new approved database records.
 
-#### Success Response
-
+#### Response (200 OK)
+```json
 {
   "success": true,
-  "studentName": "Rahul Kumar",
-  "course": "Full Stack Development",
-  "duration": "3 Months",
-  "certificateNumber": "CERT000001",
-  "issueDate": "2026-03-15T10:00:00.000Z",
+  "studentName": "Himanshi Yadav",
+  "course": "CYBERSECURITY & ETHICAL HACKING",
+  "duration": "3-Month",
+  "certificateNumber": "SSSAM/CERT/408012",
+  "issueDate": "15 July 2026",
   "instituteName": "SSSAM Academy",
-  "status": "Verified"
+  "status": "Verified",
+  "organization": "SSSAM Academy"
 }
+```
+
+---
 
 ### 3) Download Certificate PDF
-
 `POST /api/certificate/download`
 
-#### Sample Request
+Generates and downloads the verified certificate PDF file.
 
-curl -X POST http://localhost:5000/api/certificate/download \
-  -H "Content-Type: application/json" \
-  -d '{
-    "certificateNumber":"CERT000001",
-    "dateOfBirth":"2000-05-20"
-  }' --output certificate.pdf
+#### Request Payload
+```json
+{
+  "certificateNumber": "SSSAM/CERT/408012",
+  "dateOfBirth": "2003-09-20"
+}
+```
+*Returns the PDF binary stream.*
 
-### 4) Application Status
+---
 
+### 4) Check Application Status
 `GET /api/certificate/status/:applicationId`
 
-Example: `GET /api/certificate/status/APP000001`
+Example: `GET /api/certificate/status/APP8012`
+
+#### Response (200 OK)
+```json
+{
+  "success": true,
+  "name": "Himanshi Yadav",
+  "course": "Cybersecurity & Ethical Hacking",
+  "certificateType": "Training",
+  "status": "Approved",
+  "certificateNumber": "SSSAM/CERT/408012",
+  "issueDate": "15 July 2026"
+}
+```
+
+---
+
+### 5) Book Demo Class / Submit Enquiry
+`POST /api/enquiry/demo-class`
+
+#### Request Payload
+```json
+{
+  "fullName": "Rahul Kumar",
+  "phoneNumber": "9876543210",
+  "email": "rahul@example.com",
+  "course": "Data Science",
+  "customCourseName": "",
+  "demoType": "Online",
+  "message": "Interested in python course"
+}
+```
+
+---
+
+### 6) Check Enquiry Status
+`GET /api/enquiry/status/:enquiryId`
+
+---
+
+### 7) Get Course List
+`GET /api/courses`
+
+---
+
+### 8) Get Organization List
+`GET /api/organizations`
+
+---
 
 ## Admin / Dev Utility Routes
 
 ### Approve Application
-
-`PATCH /api/certificate/admin/:applicationId/approve`
-
-curl -X PATCH http://localhost:5000/api/certificate/admin/APP000001/approve
+`PATCH /api/admin/certificate/:applicationId/approve`
 
 ### Reject Application
+`PATCH /api/admin/certificate/:applicationId/reject`
 
-`PATCH /api/certificate/admin/:applicationId/reject`
-
-curl -X PATCH http://localhost:5000/api/certificate/admin/APP000001/reject \
-  -H "Content-Type: application/json" \
-  -d '{"remarks":"Details mismatch"}'
-
-## Frontend Integration Note
-
-Your existing HTML/CSS/Vanilla JS frontend can continue using the same API URLs:
-
-- `POST /api/certificate/apply`
-- `GET /api/certificate/verify?certificateNumber=`
-- `POST /api/certificate/download`
-- `GET /api/certificate/status/:applicationId`
-
-No endpoint change is required.
+```json
+{
+  "remarks": "Details mismatch"
+}
+```
