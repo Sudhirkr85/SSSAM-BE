@@ -264,12 +264,6 @@ module.exports = {
   async updateApplication(applicationId, payload = {}) {
     const application = await getApplicationByHumanId(applicationId);
 
-    if (normalizeStatus(application.status) !== "pending") {
-      const error = new Error("Only pending applications can be edited");
-      error.statusCode = 400;
-      throw error;
-    }
-
     const allowedUpdates = {
       fullName: payload.fullName || payload.name,
       email: payload.email,
@@ -297,7 +291,62 @@ module.exports = {
       application[key] = (value === null || value === "") ? "" : String(value).trim();
     });
 
+    // Handle compound courses/durations matching apply logic
+    if (payload.organization !== undefined || payload.course !== undefined) {
+      const baseCourse = payload.course !== undefined ? payload.course : (application.course || "").split(" (")[0];
+      const org = payload.organization !== undefined ? payload.organization : application.organization;
+      if (org) {
+        application.course = `${baseCourse} (${org})`;
+      } else {
+        application.course = baseCourse;
+      }
+    }
+
+    if (payload.durationDates !== undefined || payload.duration !== undefined) {
+      const baseDuration = payload.duration !== undefined ? payload.duration : (application.duration || "").split(" | Duration: ")[0];
+      const dates = payload.durationDates !== undefined ? payload.durationDates : application.durationDates;
+      if (dates) {
+        application.duration = `${baseDuration} | Duration: ${dates}`;
+      } else {
+        application.duration = baseDuration;
+      }
+    }
+
     await application.save();
+
+    // If it's already approved, regenerate PDF and update certificate record
+    if (normalizeStatus(application.status) === "approved") {
+      const { generateCertificatePdf } = require("../../services/pdf.service");
+      const fs = require("fs").promises;
+      const path = require("path");
+
+      const pdfBuffer = await generateCertificatePdf({
+        certificateNumber: application.certificateNumber,
+        fullName: application.fullName,
+        dateOfBirth: application.dateOfBirth,
+        course: application.course,
+        certificateType: application.certificateType,
+        duration: application.duration,
+        issueDate: application.issueDate,
+      });
+
+      const filename = `certificate-${application.certificateNumber.replace(/\//g, "_")}.pdf`;
+      const uploadDir = path.resolve(__dirname, "../../../uploads/certificates");
+      await fs.mkdir(uploadDir, { recursive: true });
+      const pdfPath = path.join(uploadDir, filename);
+      await fs.writeFile(pdfPath, pdfBuffer);
+
+      const relativePdfPath = `/uploads/certificates/${filename}`;
+      const certPayload = buildCertificatePayloadFromApplication(application);
+      certPayload.pdfPath = relativePdfPath;
+
+      await CertificateRecord.updateOne(
+        { certificateNumber: application.certificateNumber },
+        certPayload,
+        { upsert: true }
+      );
+    }
+
     return application.toObject();
   },
 
