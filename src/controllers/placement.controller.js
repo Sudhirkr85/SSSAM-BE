@@ -4,7 +4,11 @@ const { uploadToS3 } = require('../utils/s3');
 // Public: Get all active placements
 async function getPlacements(req, res, next) {
   try {
-    const placements = await Placement.find({ active: true }).sort({ createdAt: -1 });
+    let placements = await Placement.find({ active: true }).sort({ createdAt: -1 });
+    if (!placements || placements.length === 0) {
+      const { mockPlacements } = require('../config/mockData');
+      placements = mockPlacements.filter(p => p.active);
+    }
     return res.status(200).json(placements);
   } catch (error) {
     next(error);
@@ -14,7 +18,11 @@ async function getPlacements(req, res, next) {
 // Admin: Get all placements (including inactive)
 async function getAdminPlacements(req, res, next) {
   try {
-    const placements = await Placement.find().sort({ createdAt: -1 });
+    let placements = await Placement.find().sort({ createdAt: -1 });
+    if (!placements || placements.length === 0) {
+      const { mockPlacements } = require('../config/mockData');
+      placements = mockPlacements;
+    }
     return res.status(200).json(placements);
   } catch (error) {
     next(error);
