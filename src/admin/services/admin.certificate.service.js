@@ -1,6 +1,16 @@
 const CertificateApplication = require("../../models/CertificateApplication");
 const CertificateRecord = require("../../models/CertificateRecord");
 const { generateCertificateNumber } = require("../../utils/certNumber");
+const { sendStudentEmail } = require("../../services/emailService");
+
+const formatIndianDate = (date) => {
+  if (!date) return null;
+  return new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(date));
+};
 
 const APP_ALLOWED_STATUSES = ["pending", "approved", "rejected"];
 
@@ -183,6 +193,28 @@ module.exports = {
       { upsert: true },
     );
 
+    // Send approval email to student (non-blocking)
+    setImmediate(async () => {
+      try {
+        await sendStudentEmail({
+          name: application.fullName,
+          email: application.email,
+          course: application.course,
+          certificateType: application.certificateType,
+          applicationId: application.applicationId,
+          certificateNumber: application.certificateNumber,
+          duration: application.duration,
+          status: "Approved",
+          subject: "Application Approved - SSSAM Academy",
+          statusMessage: "Your certificate has been generated.",
+          date: formatIndianDate(application.issueDate),
+        });
+        console.log("✅ Approval email sent");
+      } catch (err) {
+        console.error("❌ Approval email failed:", err.message);
+      }
+    });
+
     return application.toObject();
   },
 
@@ -205,6 +237,27 @@ module.exports = {
     application.rejectionReason = String(reason).trim();
     await application.save();
 
+    // Send rejection email to student (non-blocking)
+    setImmediate(async () => {
+      try {
+        await sendStudentEmail({
+          name: application.fullName,
+          email: application.email,
+          course: application.course,
+          certificateType: application.certificateType,
+          applicationId: application.applicationId,
+          duration: application.duration,
+          status: "Rejected",
+          subject: "Application Rejected - SSSAM Academy",
+          statusMessage: `Your application has been rejected. Reason: ${application.rejectionReason}`,
+          date: formatIndianDate(new Date()),
+        });
+        console.log("✅ Rejection email sent");
+      } catch (err) {
+        console.error("❌ Rejection email failed:", err.message);
+      }
+    });
+
     return application.toObject();
   },
 
@@ -218,13 +271,20 @@ module.exports = {
     }
 
     const allowedUpdates = {
-      fullName: payload.name,
+      fullName: payload.fullName || payload.name,
+      email: payload.email,
+      phoneNumber: payload.phoneNumber || payload.phone,
+      dateOfBirth: payload.dateOfBirth || payload.dob,
+      qualification: payload.qualification,
       course: payload.course,
+      organization: payload.organization,
+      certificateType: payload.certificateType,
       duration: payload.duration,
+      durationDates: payload.durationDates,
     };
 
     const updates = Object.entries(allowedUpdates).filter(
-      ([, value]) => value !== undefined && value !== null && String(value).trim() !== "",
+      ([, value]) => value !== undefined
     );
 
     if (!updates.length) {
@@ -234,7 +294,7 @@ module.exports = {
     }
 
     updates.forEach(([key, value]) => {
-      application[key] = String(value).trim();
+      application[key] = (value === null || value === "") ? "" : String(value).trim();
     });
 
     await application.save();

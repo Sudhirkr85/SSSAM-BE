@@ -67,7 +67,7 @@ const approveApplication = async (req, res) => {
 
 const rejectApplication = async (req, res) => {
   try {
-    const { reason } = req.body;
+    const reason = req.body.reason || req.body.remarks;
     const data = await service.rejectApplication(req.params.applicationId, reason);
     return res.status(200).json({
       success: true,
