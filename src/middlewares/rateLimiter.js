@@ -9,11 +9,9 @@ const applyLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   keyGenerator: (req, res) => {
-    // Use IP address as the key
     return req.ip || req.connection.remoteAddress;
   },
   skip: (req, res) => {
-    // Skip rate limiting for non-POST requests to /apply
     return req.method !== 'POST';
   },
   handler: (req, res, next, options) => {
@@ -25,4 +23,30 @@ const applyLimiter = rateLimit({
   }
 });
 
-module.exports = applyLimiter;
+// Rate limiter for certificate downloads (prevents brute-force)
+// Max 5 attempts per IP per 15 minutes
+const downloadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // limit each IP to 5 requests per windowMs
+  message: 'Too many download attempts from this IP, please try again after 15 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req, res) => {
+    return req.ip || req.connection.remoteAddress;
+  },
+  skip: (req, res) => {
+    return req.method !== 'POST';
+  },
+  handler: (req, res, next, options) => {
+    return res.status(options.statusCode).json({
+      success: false,
+      statusCode: options.statusCode,
+      message: options.message
+    });
+  }
+});
+
+module.exports = {
+  applyLimiter,
+  downloadLimiter
+};

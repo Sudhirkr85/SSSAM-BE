@@ -1,22 +1,24 @@
 const CertificateApplication = require('../models/CertificateApplication');
 
-const APP_ID_PREFIX = 'APP';
-const APP_ID_PAD = 6;
+const APP_ID_PREFIX = 'SSSAM-APP-';
 
 const generateApplicationId = async () => {
-  const latest = await CertificateApplication.findOne({
-    applicationId: { $regex: `^${APP_ID_PREFIX}\\d+$` }
-  })
-    .sort({ applicationId: -1 })
-    .select('applicationId')
-    .lean();
+  let isUnique = false;
+  let finalId = '';
 
-  const current = latest?.applicationId
-    ? Number(latest.applicationId.replace(APP_ID_PREFIX, ''))
-    : 0;
+  while (!isUnique) {
+    // Generate a random 6-digit number between 100000 and 999999
+    const randomNum = Math.floor(100000 + Math.random() * 900000);
+    finalId = `${APP_ID_PREFIX}${randomNum}`;
 
-  const next = current + 1;
-  return `${APP_ID_PREFIX}${String(next).padStart(APP_ID_PAD, '0')}`;
+    // Verify it doesn't already exist in the database
+    const existing = await CertificateApplication.findOne({ applicationId: finalId }).lean();
+    if (!existing) {
+      isUnique = true;
+    }
+  }
+
+  return finalId;
 };
 
 module.exports = {

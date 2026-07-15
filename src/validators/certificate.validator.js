@@ -13,12 +13,14 @@ const applySchema = Joi.object({
     }),
   email: Joi.string().trim().email().required(),
   dateOfBirth: Joi.date().required(),
-  address: Joi.string().trim().min(5).max(300).required(),
+  qualification: Joi.string().trim().min(2).max(200).optional().allow('', null),
   course: Joi.string().trim().min(1).max(200).required(),
+  organization: Joi.string().trim().min(1).max(200).optional().allow('', null),
   certificateType: Joi.string()
     .valid(...certificateTypes)
     .required(),
-  duration: Joi.string().trim().min(1).max(100).required()
+  duration: Joi.string().trim().min(1).max(100).required(),
+  durationDates: Joi.string().trim().min(1).max(100).optional().allow('', null)
 });
 
 const verifyQuerySchema = Joi.object({

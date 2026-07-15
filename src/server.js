@@ -8,6 +8,8 @@ const adminRoutes = require("./admin/routes/admin.routes");
 const connectDB = require("./config/db");
 const certificateRoutes = require("./routes/certificate.routes");
 const enquiryRoutes = require("./routes/enquiry.routes");
+const courseRoutes = require("./routes/course.routes");
+const organizationRoutes = require("./routes/organization.routes");
 const notFound = require("./middlewares/notFound");
 const errorHandler = require("./middlewares/errorHandler");
 
@@ -31,6 +33,9 @@ if (process.env.NODE_ENV !== "test") {
   app.use(morgan("dev"));
 }
 
+const path = require("path");
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
 
 app.get("/", (_req, res) => {
   return res.status(200).json({ success: true, message: "API is running." });
@@ -40,6 +45,9 @@ app.use("/api/admin", adminRoutes);
 
 app.use("/api/certificate", certificateRoutes);
 app.use("/api/enquiry", enquiryRoutes);
+app.use("/api/courses", courseRoutes);
+app.use("/api/organizations", organizationRoutes);
+
 
 app.use(notFound);
 app.use(errorHandler);

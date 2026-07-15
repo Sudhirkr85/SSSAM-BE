@@ -3,7 +3,9 @@ const {
   applyCertificate,
   verifyCertificateByNumber,
   downloadCertificate,
-  getStatusByApplicationId
+  getStatusByApplicationId,
+  approveApplicationByAdmin,
+  rejectApplicationByAdmin
 } = require('../controllers/certificate.controller');
 const {
   validate,
@@ -12,13 +14,17 @@ const {
   downloadSchema,
   applicationIdParamSchema
 } = require('../validators/certificate.validator');
-const applyLimiter = require('../middlewares/rateLimiter');
+const { applyLimiter, downloadLimiter } = require('../middlewares/rateLimiter');
 
 const router = express.Router();
 
 router.post('/apply', applyLimiter, validate(applySchema), applyCertificate);
 router.get('/verify', validate(verifyQuerySchema, 'query'), verifyCertificateByNumber);
-router.post('/download', validate(downloadSchema), downloadCertificate);
+router.post('/download', downloadLimiter, validate(downloadSchema), downloadCertificate);
 router.get('/status/:applicationId', validate(applicationIdParamSchema, 'params'), getStatusByApplicationId);
+
+// Public Testing Routes (Bypasses Admin Auth Token for Local/Dev testing)
+router.patch('/approve/:applicationId', approveApplicationByAdmin);
+router.patch('/reject/:applicationId', rejectApplicationByAdmin);
 
 module.exports = router;

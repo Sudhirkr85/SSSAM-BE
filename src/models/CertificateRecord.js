@@ -25,7 +25,14 @@ const certificateRecordSchema = new mongoose.Schema(
     certificateType: {
       type: String,
       required: true,
-      enum: ["Training", "Workshop", "Internship"],
+      enum: [
+        "Training",
+        "Workshop",
+        "Internship",
+        "Industrial Training",
+        "Academic Training",
+        "Corporate Training"
+      ],
     },
     duration: {
       type: String,
@@ -35,6 +42,15 @@ const certificateRecordSchema = new mongoose.Schema(
     issueDate: {
       type: Date,
       required: true,
+    },
+    pdfPath: {
+      type: String,
+      default: null,
+    },
+    qualification: {
+      type: String,
+      default: null,
+      trim: true,
     },
     instituteName: {
       type: String,

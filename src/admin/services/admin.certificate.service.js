@@ -150,9 +150,36 @@ module.exports = {
 
     await application.save();
 
+    // Generate PDF
+    const { generateCertificatePdf } = require("../../services/pdf.service");
+    const fs = require("fs").promises;
+    const path = require("path");
+
+    const pdfBuffer = await generateCertificatePdf({
+      certificateNumber: application.certificateNumber,
+      fullName: application.fullName,
+      dateOfBirth: application.dateOfBirth,
+      course: application.course,
+      certificateType: application.certificateType,
+      duration: application.duration,
+      issueDate: application.issueDate,
+    });
+
+    const filename = `certificate-${application.certificateNumber.replace(/\//g, "_")}.pdf`;
+    const uploadDir = path.resolve(__dirname, "../../../uploads/certificates");
+    await fs.mkdir(uploadDir, { recursive: true });
+    const pdfPath = path.join(uploadDir, filename);
+    await fs.writeFile(pdfPath, pdfBuffer);
+
+    // Relational file path for serving / static access
+    const relativePdfPath = `/uploads/certificates/${filename}`;
+
+    const certPayload = buildCertificatePayloadFromApplication(application);
+    certPayload.pdfPath = relativePdfPath;
+
     await CertificateRecord.updateOne(
       { certificateNumber: application.certificateNumber },
-      buildCertificatePayloadFromApplication(application),
+      certPayload,
       { upsert: true },
     );
 

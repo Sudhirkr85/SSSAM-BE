@@ -28,9 +28,9 @@ const certificateApplicationSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    address: {
+    qualification: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
     },
     course: {
@@ -41,7 +41,14 @@ const certificateApplicationSchema = new mongoose.Schema(
     certificateType: {
       type: String,
       required: true,
-      enum: ["Training", "Workshop", "Internship"],
+      enum: [
+        "Training",
+        "Workshop",
+        "Internship",
+        "Industrial Training",
+        "Academic Training",
+        "Corporate Training"
+      ],
     },
     duration: {
       type: String,

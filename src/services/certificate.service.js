@@ -1,7 +1,9 @@
 const CertificateApplication = require("../models/CertificateApplication");
 const CertificateRecord = require("../models/CertificateRecord");
+const LegacyCertificate = require("../models/LegacyCertificate");
 
 const { sendStudentEmail } = require("./emailService");
+
 
 const { generateApplicationId } = require("../utils/appId");
 const { generateCertificateNumber } = require("../utils/certNumber");
@@ -45,8 +47,26 @@ const sendEmailAsync = (fn) => {
 const applyForCertificate = async (payload) => {
   const normalizedPhoneNumber = normalizeText(payload.phoneNumber);
   const normalizedEmail = normalizeText(payload.email).toLowerCase();
-  const normalizedCourse = normalizeText(payload.course);
+  
+  const normalizedQualification = normalizeText(payload.qualification);
+
+  let normalizedCourse = normalizeText(payload.course);
+  if (payload.organization) {
+    const normalizedOrg = normalizeText(payload.organization);
+    if (normalizedOrg) {
+      normalizedCourse = `${normalizedCourse} (${normalizedOrg})`;
+    }
+  }
+
   const normalizedCertificateType = normalizeText(payload.certificateType);
+
+  let normalizedDuration = normalizeText(payload.duration);
+  if (payload.durationDates) {
+    const normalizedDates = normalizeText(payload.durationDates);
+    if (normalizedDates) {
+      normalizedDuration = `${normalizedDuration} | Duration: ${normalizedDates}`;
+    }
+  }
 
   const existingApplication = await CertificateApplication.findOne({
     phoneNumber: normalizedPhoneNumber,
@@ -65,8 +85,10 @@ const applyForCertificate = async (payload) => {
     ...payload,
     phoneNumber: normalizedPhoneNumber,
     email: normalizedEmail,
+    qualification: normalizedQualification,
     course: normalizedCourse,
     certificateType: normalizedCertificateType,
+    duration: normalizedDuration,
     applicationId,
   });
 
@@ -122,6 +144,7 @@ const approveApplication = async (applicationId) => {
       instituteName: "SSSAM Academy",
       status: "Verified",
       applicationId: application._id,
+      qualification: application.qualification,
     },
     { upsert: true },
   );
@@ -150,7 +173,13 @@ const approveApplication = async (applicationId) => {
 // ✅ VERIFY
 // =============================
 const verifyCertificate = async (certificateNumber) => {
-  const record = await CertificateRecord.findOne({ certificateNumber });
+  let record = await CertificateRecord.findOne({ certificateNumber });
+  let isLegacy = false;
+
+  if (!record) {
+    record = await LegacyCertificate.findOne({ certificateNumber });
+    isLegacy = true;
+  }
 
   if (!record) {
     throw createHttpError(404, "Certificate not found");
@@ -158,6 +187,12 @@ const verifyCertificate = async (certificateNumber) => {
 
   const data = record.toObject();
   data.issueDate = formatIndianDate(data.issueDate);
+  data.isLegacy = isLegacy;
+  data.status = isLegacy ? (record.status || "Valid (Legacy Record)") : record.status;
+  
+  // Normalize field names so they look uniform to controller/client
+  data.fullName = data.fullName || data.studentName;
+  data.certificateType = data.certificateType || data.trainingType;
 
   return data;
 };
@@ -203,17 +238,42 @@ const rejectApplication = async (applicationId, remarks) => {
 // ✅ DOWNLOAD
 // =============================
 const getCertificateForDownload = async (certificateNumber, dateOfBirth) => {
-  const record = await CertificateRecord.findOne({
+  // Check primary first
+  let record = await CertificateRecord.findOne({
     certificateNumber,
     dateOfBirth,
   });
+  let isLegacy = false;
+
+  if (!record) {
+    // Fallback to legacy
+    const legacyRecord = await LegacyCertificate.findOne({ certificateNumber });
+    if (legacyRecord) {
+      if (legacyRecord.dateOfBirth) {
+        // Enforce DOB matching
+        const reqDobStr = new Date(dateOfBirth).toISOString().split('T')[0];
+        const certDobStr = new Date(legacyRecord.dateOfBirth).toISOString().split('T')[0];
+        if (reqDobStr !== certDobStr) {
+          throw createHttpError(404, "Invalid details (Date of birth mismatch)");
+        }
+      }
+      record = legacyRecord;
+      isLegacy = true;
+    }
+  }
 
   if (!record) {
     throw createHttpError(404, "Invalid details");
   }
 
-  return record;
+  const data = record.toObject();
+  data.isLegacy = isLegacy;
+  data.fullName = data.fullName || data.studentName;
+  data.certificateType = data.certificateType || data.trainingType;
+
+  return data;
 };
+
 
 module.exports = {
   applyForCertificate,
