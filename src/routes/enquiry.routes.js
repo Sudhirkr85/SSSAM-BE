@@ -13,7 +13,7 @@ const enquiryLimiter = require('../middlewares/enquiryLimiter');
 const router = express.Router();
 
 // Public routes
-router.post('/demo-class', enquiryLimiter, validate(enquirySchema), bookDemoClass);
+router.post('/', enquiryLimiter, validate(enquirySchema), bookDemoClass);
 router.get('/status/:enquiryId', validate(enquiryIdParamSchema, 'params'), getEnquiryStatusById);
 
 module.exports = router;
