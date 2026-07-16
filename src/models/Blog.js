@@ -32,6 +32,7 @@ const BlogSchema = new mongoose.Schema(
       default: 'Blog',
     },
     hiringDetails: {
+      source: { type: String, enum: ['own', 'external'], default: 'external' },
       company: { type: String, default: '' },
       role: { type: String, default: '' },
       applyLink: { type: String, default: '' },

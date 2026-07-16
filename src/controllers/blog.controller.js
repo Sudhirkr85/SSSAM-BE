@@ -61,7 +61,7 @@ async function generateAIBlog(req, res, next) {
 // Admin: Create Blog post
 async function createBlog(req, res, next) {
   try {
-    const { title, slug, summary, content, type, status, tags, company, role, applyLink, location, active } = req.body;
+    const { title, slug, summary, content, type, status, tags, company, role, applyLink, location, active, hiringSource } = req.body;
 
     if (!title || !slug || !summary || !content) {
       return res.status(400).json({ message: 'title, slug, summary, and content are required.' });
@@ -91,6 +91,7 @@ async function createBlog(req, res, next) {
       active: active !== undefined ? (active === 'true' || active === true) : true,
       tags: tagsArray,
       hiringDetails: type === 'Hiring' ? {
+        source: hiringSource || 'external',
         company: company || '',
         role: role || '',
         applyLink: applyLink || '',
@@ -108,7 +109,7 @@ async function createBlog(req, res, next) {
 async function updateBlog(req, res, next) {
   try {
     const { id } = req.params;
-    const { title, slug, summary, content, type, status, tags, active, company, role, applyLink, location } = req.body;
+    const { title, slug, summary, content, type, status, tags, active, company, role, applyLink, location, hiringSource } = req.body;
 
     const blog = await Blog.findById(id);
     if (!blog) {
@@ -136,6 +137,7 @@ async function updateBlog(req, res, next) {
 
     if (blog.type === 'Hiring' || type === 'Hiring') {
       blog.hiringDetails = {
+        source: hiringSource !== undefined ? hiringSource : (blog.hiringDetails?.source || 'external'),
         company: company !== undefined ? company : (blog.hiringDetails?.company || ''),
         role: role !== undefined ? role : (blog.hiringDetails?.role || ''),
         applyLink: applyLink !== undefined ? applyLink : (blog.hiringDetails?.applyLink || ''),
