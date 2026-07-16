@@ -32,7 +32,7 @@ async function getAdminPlacements(req, res, next) {
 // Admin: Create placement (expects multipart/form-data for image files)
 async function createPlacement(req, res, next) {
   try {
-    const { studentName, companyName, packageLPA, designation, placedYear } = req.body;
+    const { studentName, companyName, packageLPA, designation, placedYear, active } = req.body;
 
     if (!studentName || !companyName || !packageLPA || !designation) {
       return res.status(400).json({ message: 'studentName, companyName, packageLPA, and designation are required.' });
@@ -57,6 +57,7 @@ async function createPlacement(req, res, next) {
       packageLPA: parseFloat(packageLPA),
       designation,
       placedYear: placedYear ? parseInt(placedYear) : undefined,
+      active: active !== undefined ? (active === 'true' || active === true) : true,
       photoUrl,
       companyLogoUrl,
     });

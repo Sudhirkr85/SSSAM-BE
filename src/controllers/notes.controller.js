@@ -65,7 +65,7 @@ async function downloadNoteAndSaveLead(req, res, next) {
 // Admin: Create Study Notes (expects multer single file upload)
 async function createNote(req, res, next) {
   try {
-    const { title, description, category } = req.body;
+    const { title, description, category, active } = req.body;
 
     if (!title || !description || !category) {
       return res.status(400).json({ message: 'title, description, and category are required.' });
@@ -81,6 +81,7 @@ async function createNote(req, res, next) {
       title,
       description,
       category,
+      active: active !== undefined ? (active === 'true' || active === true) : true,
       fileUrl,
     });
 

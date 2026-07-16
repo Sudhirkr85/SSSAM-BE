@@ -81,7 +81,7 @@ async function generateAIBlog(req, res, next) {
 // Admin: Create Blog post
 async function createBlog(req, res, next) {
   try {
-    const { title, slug, summary, content, type, status, tags, company, role, applyLink, location } = req.body;
+    const { title, slug, summary, content, type, status, tags, company, role, applyLink, location, active } = req.body;
 
     if (!title || !slug || !summary || !content) {
       return res.status(400).json({ message: 'title, slug, summary, and content are required.' });
@@ -108,6 +108,7 @@ async function createBlog(req, res, next) {
       imageUrl,
       type: type || 'Blog',
       status: status || 'Draft',
+      active: active !== undefined ? (active === 'true' || active === true) : true,
       tags: tagsArray,
       hiringDetails: type === 'Hiring' ? {
         company: company || '',
