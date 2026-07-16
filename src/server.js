@@ -13,6 +13,7 @@ const placementRoutes = require("./routes/placement.routes");
 const blogRoutes = require("./routes/blog.routes");
 const notesRoutes = require("./routes/notes.routes");
 const settingsRoutes = require("./routes/settings.routes");
+const galleryRoutes = require("./routes/gallery.routes");
 const notFound = require("./middlewares/notFound");
 const errorHandler = require("./middlewares/errorHandler");
 
@@ -53,6 +54,7 @@ app.use("/api/placements", placementRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/notes", notesRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/gallery", galleryRoutes);
 
 
 app.use(notFound);

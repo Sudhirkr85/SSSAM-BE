@@ -6,6 +6,7 @@ const adminEnquiryController = require("../controllers/admin.enquiry.controller"
 const adminPlacementController = require("../../controllers/placement.controller");
 const adminBlogController = require("../../controllers/blog.controller");
 const adminNotesController = require("../../controllers/notes.controller");
+const galleryController = require("../../controllers/gallery.controller");
 const upload = require("../../middlewares/upload");
 
 const router = express.Router();
@@ -74,6 +75,12 @@ router.get("/notes", adminNotesController.getAdminNotes);
 router.post("/notes", upload.single("file"), adminNotesController.createNote);
 router.put("/notes/:id", upload.single("file"), adminNotesController.updateNote);
 router.delete("/notes/:id", adminNotesController.deleteNote);
+
+// Admin Gallery routes
+router.get("/gallery", galleryController.getAdminGallery);
+router.post("/gallery", upload.single("image"), galleryController.createGalleryItem);
+router.put("/gallery/:id", upload.single("image"), galleryController.updateGalleryItem);
+router.delete("/gallery/:id", galleryController.deleteGalleryItem);
 
 // Admin general settings route
 const settingsController = require("../../controllers/settings.controller");
