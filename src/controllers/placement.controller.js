@@ -5,10 +5,6 @@ const { uploadToS3 } = require('../utils/s3');
 async function getPlacements(req, res, next) {
   try {
     let placements = await Placement.find({ active: true }).sort({ createdAt: -1 });
-    if (!placements || placements.length === 0) {
-      const { mockPlacements } = require('../config/mockData');
-      placements = mockPlacements.filter(p => p.active);
-    }
     return res.status(200).json(placements);
   } catch (error) {
     next(error);
@@ -19,10 +15,6 @@ async function getPlacements(req, res, next) {
 async function getAdminPlacements(req, res, next) {
   try {
     let placements = await Placement.find().sort({ createdAt: -1 });
-    if (!placements || placements.length === 0) {
-      const { mockPlacements } = require('../config/mockData');
-      placements = mockPlacements;
-    }
     return res.status(200).json(placements);
   } catch (error) {
     next(error);

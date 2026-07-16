@@ -75,4 +75,8 @@ router.post("/notes", upload.single("file"), adminNotesController.createNote);
 router.put("/notes/:id", upload.single("file"), adminNotesController.updateNote);
 router.delete("/notes/:id", adminNotesController.deleteNote);
 
+// Admin general settings route
+const settingsController = require("../../controllers/settings.controller");
+router.post("/settings", settingsController.updateSetting);
+
 module.exports = router;

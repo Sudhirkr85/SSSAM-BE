@@ -13,18 +13,6 @@ async function getBlogs(req, res, next) {
     }
 
     let blogs = await Blog.find(filter).sort({ createdAt: -1 });
-    
-    if (!blogs || blogs.length === 0) {
-      const { mockBlogs } = require('../config/mockData');
-      blogs = mockBlogs.filter(b => {
-        let match = b.active && b.status === 'Published';
-        if (match && req.query.type) {
-          match = b.type === req.query.type;
-        }
-        return match;
-      });
-    }
-
     return res.status(200).json(blogs);
   } catch (error) {
     next(error);
@@ -35,10 +23,6 @@ async function getBlogs(req, res, next) {
 async function getAdminBlogs(req, res, next) {
   try {
     let blogs = await Blog.find().sort({ createdAt: -1 });
-    if (!blogs || blogs.length === 0) {
-      const { mockBlogs } = require('../config/mockData');
-      blogs = mockBlogs;
-    }
     return res.status(200).json(blogs);
   } catch (error) {
     next(error);
@@ -50,10 +34,6 @@ async function getBlogBySlug(req, res, next) {
   try {
     const { slug } = req.params;
     let blog = await Blog.findOne({ slug, active: true, status: 'Published' });
-    if (!blog) {
-      const { mockBlogs } = require('../config/mockData');
-      blog = mockBlogs.find(b => b.slug === slug && b.active && b.status === 'Published');
-    }
     if (!blog) {
       return res.status(404).json({ message: 'Blog post not found.' });
     }
