@@ -54,15 +54,43 @@ JSON Structure:
 
     // Parse the JSON output from Grok
     let cleanJson = resultText;
+    
     // Strip markdown JSON wrappers if Grok accidentally outputted them
     if (cleanJson.startsWith('```json')) {
-      cleanJson = cleanJson.substring(7);
+      cleanJson = cleanJson.replace(/^```json\s*/i, '');
+    } else if (cleanJson.startsWith('```')) {
+      cleanJson = cleanJson.replace(/^```\s*/, '');
     }
     if (cleanJson.endsWith('```')) {
-      cleanJson = cleanJson.substring(0, cleanJson.length - 3);
+      cleanJson = cleanJson.replace(/```$/, '');
     }
+    
+    cleanJson = cleanJson.trim();
 
-    return JSON.parse(cleanJson.trim());
+    try {
+      // Fix escaping backslash issues commonly produced by AI APIs
+      const scrubbed = cleanJson.replace(/\\(?!["\\\/bfnrtu])/g, "\\\\");
+      return JSON.parse(scrubbed);
+    } catch (parseErr) {
+      console.warn("JSON parsing failed, falling back to regex parser", parseErr.message);
+      
+      // Regex parsing fallback if JSON is still slightly malformed
+      const titleMatch = cleanJson.match(/"title"\s*:\s*"([^"]+)"/);
+      const summaryMatch = cleanJson.match(/"summary"\s*:\s*"([^"]+)"/);
+      let content = cleanJson;
+      
+      // Clean content from JSON wrapping if possible
+      const contentMatch = cleanJson.match(/"content"\s*:\s*"([\s\S]+)"\s*\}?$/);
+      if (contentMatch) {
+        content = contentMatch[1];
+      }
+
+      return {
+        title: titleMatch ? titleMatch[1] : prompt,
+        summary: summaryMatch ? summaryMatch[1] : "AI Generated Blog content.",
+        content: content || resultText
+      };
+    }
   } catch (err) {
     console.error('Grok Generation Error:', err.message);
     throw err;
