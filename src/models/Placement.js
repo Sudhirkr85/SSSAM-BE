@@ -22,7 +22,7 @@ const PlacementSchema = new mongoose.Schema(
     },
     packageLPA: {
       type: Number,
-      required: true,
+      required: false,
     },
     designation: {
       type: String,

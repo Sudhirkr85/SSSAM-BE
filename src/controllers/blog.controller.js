@@ -160,10 +160,18 @@ async function updateBlog(req, res, next) {
 async function deleteBlog(req, res, next) {
   try {
     const { id } = req.params;
-    const blog = await Blog.findByIdAndDelete(id);
+    const blog = await Blog.findById(id);
     if (!blog) {
       return res.status(404).json({ message: 'Blog post not found.' });
     }
+
+    // Delete cover banner from S3/R2
+    if (blog.imageUrl) {
+      const { deleteFromS3 } = require('../utils/s3');
+      await deleteFromS3(blog.imageUrl);
+    }
+
+    await Blog.findByIdAndDelete(id);
     return res.status(200).json({ message: 'Blog post deleted successfully.' });
   } catch (error) {
     next(error);

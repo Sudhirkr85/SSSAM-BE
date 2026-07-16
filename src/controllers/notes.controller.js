@@ -122,10 +122,18 @@ async function updateNote(req, res, next) {
 async function deleteNote(req, res, next) {
   try {
     const { id } = req.params;
-    const note = await StudyNotes.findByIdAndDelete(id);
+    const note = await StudyNotes.findById(id);
     if (!note) {
       return res.status(404).json({ message: 'Study notes not found.' });
     }
+
+    // Delete PDF file from S3/R2
+    if (note.fileUrl) {
+      const { deleteFromS3 } = require('../utils/s3');
+      await deleteFromS3(note.fileUrl);
+    }
+
+    await StudyNotes.findByIdAndDelete(id);
     return res.status(200).json({ message: 'Study notes deleted successfully.' });
   } catch (error) {
     next(error);

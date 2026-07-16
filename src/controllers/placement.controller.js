@@ -26,8 +26,8 @@ async function createPlacement(req, res, next) {
   try {
     const { studentName, companyName, packageLPA, designation, placedYear, active } = req.body;
 
-    if (!studentName || !companyName || !packageLPA || !designation) {
-      return res.status(400).json({ message: 'studentName, companyName, packageLPA, and designation are required.' });
+    if (!studentName || !companyName || !designation) {
+      return res.status(400).json({ message: 'studentName, companyName, and designation are required.' });
     }
 
     if (!req.files || !req.files.photo) {
@@ -46,7 +46,7 @@ async function createPlacement(req, res, next) {
     const newPlacement = await Placement.create({
       studentName,
       companyName,
-      packageLPA: parseFloat(packageLPA),
+      packageLPA: packageLPA ? parseFloat(packageLPA) : undefined,
       designation,
       placedYear: placedYear ? parseInt(placedYear) : undefined,
       active: active !== undefined ? (active === 'true' || active === true) : true,
@@ -101,10 +101,21 @@ async function updatePlacement(req, res, next) {
 async function deletePlacement(req, res, next) {
   try {
     const { id } = req.params;
-    const placement = await Placement.findByIdAndDelete(id);
+    const placement = await Placement.findById(id);
     if (!placement) {
       return res.status(404).json({ message: 'Placement not found.' });
     }
+
+    // Delete associated images from S3/R2
+    const { deleteFromS3 } = require('../utils/s3');
+    if (placement.photoUrl) {
+      await deleteFromS3(placement.photoUrl);
+    }
+    if (placement.companyLogoUrl) {
+      await deleteFromS3(placement.companyLogoUrl);
+    }
+
+    await Placement.findByIdAndDelete(id);
     return res.status(200).json({ message: 'Placement deleted successfully.' });
   } catch (error) {
     next(error);

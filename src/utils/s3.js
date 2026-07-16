@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 // Initialize S3/R2 Client configuration
 const clientConfig = {
@@ -52,6 +52,42 @@ async function uploadToS3(fileBuffer, originalName, mimeType) {
   return `https://${bucketName}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${fileKey}`;
 }
 
+/**
+ * Deletes a file from S3 bucket using its public URL or raw Key
+ * @param {string} fileUrl - The public URL or key of the file to delete
+ */
+async function deleteFromS3(fileUrl) {
+  if (!fileUrl) return;
+  
+  const bucketName = process.env.R2_BUCKET || process.env.AWS_BUCKET_NAME;
+  if (!bucketName) return;
+
+  try {
+    // Extract key from URL. Example URL formats:
+    // https://cdn.example.com/uploads/123-file.png -> uploads/123-file.png
+    // https://bucket.s3.region.amazonaws.com/uploads/123-file.png -> uploads/123-file.png
+    let fileKey = fileUrl;
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+      const urlObj = new URL(fileUrl);
+      // Pathname will be like "/uploads/123-file.png"
+      fileKey = decodeURIComponent(urlObj.pathname).replace(/^\/+/, '');
+    }
+
+    if (!fileKey) return;
+
+    const command = new DeleteObjectCommand({
+      Bucket: bucketName,
+      Key: fileKey,
+    });
+
+    await s3Client.send(command);
+    console.log(`Successfully deleted file from S3: ${fileKey}`);
+  } catch (err) {
+    console.error(`Failed to delete S3 file (${fileUrl}):`, err);
+  }
+}
+
 module.exports = {
   uploadToS3,
+  deleteFromS3,
 };
