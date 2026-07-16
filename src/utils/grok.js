@@ -38,9 +38,9 @@ JSON Structure:
         model: 'llama-3.3-70b-versatile', // Fast Groq Llama 3.3 model
         messages: [
           { role: 'system', content: systemMessage },
-          { role: 'user', content: `Write a blog post about: ${prompt}` },
+          { role: 'user', content: `Write a unique and fresh blog post about: "${prompt}". Seed/Variant token: ${Math.random().toString(36).substring(7)}` },
         ],
-        temperature: 0.7,
+        temperature: 0.95,
       }),
     });
 
