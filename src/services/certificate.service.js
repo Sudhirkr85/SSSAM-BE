@@ -45,7 +45,7 @@ const sendEmailAsync = (fn) => {
 // ✅ APPLY
 // =============================
 const applyForCertificate = async (payload) => {
-  const normalizedPhoneNumber = normalizeText(payload.phoneNumber);
+  const normalizedPhoneNumber = normalizeText(payload.phoneNumber)?.replace(/\s/g, ""); // strip spaces e.g. "9876 543210"
   const normalizedEmail = normalizeText(payload.email).toLowerCase();
   
   const normalizedQualification = normalizeText(payload.qualification);

@@ -6,7 +6,13 @@ const applySchema = Joi.object({
   fullName: Joi.string().trim().min(2).max(120).required(),
   phoneNumber: Joi.string()
     .trim()
-    .pattern(/^[6-9]\d{9}$/)
+    .custom((val, helpers) => {
+      const clean = val.replace(/\s/g, "");
+      if (!/^[6-9]\d{9}$/.test(clean)) {
+        return helpers.error('string.pattern.base');
+      }
+      return clean; // return cleaned value (no spaces)
+    })
     .required()
     .messages({
       'string.pattern.base': 'phoneNumber must be a valid Indian 10-digit mobile number.'
