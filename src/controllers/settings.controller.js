@@ -48,7 +48,7 @@ async function getSetting(req, res, next) {
     if (!setting) {
       // Return default values for known settings
       if (key === 'apply_guide_video_url') {
-        return res.status(200).json({ key, value: 'https://www.youtube.com/embed/dQw4w9WgXcQ' });
+        return res.status(200).json({ key, value: 'https://www.youtube.com/embed/Fo5M5Ufk8C0' });
       }
       return res.status(404).json({ message: 'Setting not found' });
     }
