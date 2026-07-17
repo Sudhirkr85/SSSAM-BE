@@ -45,6 +45,10 @@ const sendEmailAsync = (fn) => {
 // ✅ APPLY
 // =============================
 const applyForCertificate = async (payload) => {
+  const normalizedFullName = normalizeText(payload.fullName)
+    ?.split(/\s+/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
   const normalizedPhoneNumber = normalizeText(payload.phoneNumber)?.replace(/\s/g, ""); // strip spaces e.g. "9876 543210"
   const normalizedEmail = normalizeText(payload.email).toLowerCase();
   
@@ -71,7 +75,8 @@ const applyForCertificate = async (payload) => {
   const existingApplication = await CertificateApplication.findOne({
     phoneNumber: normalizedPhoneNumber,
     email: { $regex: `^${escapeRegex(normalizedEmail)}$`, $options: "i" },
-    course: { $regex: `^${escapeRegex(normalizedCourse)}$`, $options: "i" }
+    course: { $regex: `^${escapeRegex(normalizedCourse)}$`, $options: "i" },
+    status: { $nin: ["Rejected", "rejected"] }
   }).lean();
 
   if (existingApplication) {
@@ -82,6 +87,7 @@ const applyForCertificate = async (payload) => {
 
   const created = await CertificateApplication.create({
     ...payload,
+    fullName: normalizedFullName,
     phoneNumber: normalizedPhoneNumber,
     email: normalizedEmail,
     qualification: normalizedQualification,
