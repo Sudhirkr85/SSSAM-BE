@@ -12,6 +12,14 @@ const certificateApplicationSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      set: function (val) {
+        if (!val) return val;
+        return val
+          .trim()
+          .split(/\s+/)
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(" ");
+      }
     },
     phoneNumber: {
       type: String,

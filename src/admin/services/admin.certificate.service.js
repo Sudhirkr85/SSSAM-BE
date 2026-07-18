@@ -12,6 +12,16 @@ const formatIndianDate = (date) => {
   }).format(new Date(date));
 };
 
+const capitalizeName = (name) => {
+  if (name === undefined || name === null) return name;
+  const str = String(name).trim();
+  if (!str) return str;
+  return str
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
 const APP_ALLOWED_STATUSES = ["pending", "approved", "rejected"];
 
 const parsePagination = (page, limit) => {
@@ -265,7 +275,7 @@ module.exports = {
     const application = await getApplicationByHumanId(applicationId);
 
     const allowedUpdates = {
-      fullName: payload.fullName || payload.name,
+      fullName: capitalizeName(payload.fullName || payload.name),
       email: payload.email,
       phoneNumber: payload.phoneNumber || payload.phone,
       dateOfBirth: payload.dateOfBirth || payload.dob,
@@ -441,7 +451,11 @@ module.exports = {
     let hasUpdate = false;
     editableFields.forEach((field) => {
       if (payload[field] !== undefined) {
-        certificate[field] = payload[field];
+        if (field === "fullName") {
+          certificate[field] = capitalizeName(payload[field]);
+        } else {
+          certificate[field] = payload[field];
+        }
         hasUpdate = true;
       }
     });
@@ -458,7 +472,7 @@ module.exports = {
       { _id: certificate.applicationId },
       {
         $set: {
-          ...(payload.fullName !== undefined ? { fullName: payload.fullName } : {}),
+          ...(payload.fullName !== undefined ? { fullName: capitalizeName(payload.fullName) } : {}),
           ...(payload.course !== undefined ? { course: payload.course } : {}),
           ...(payload.duration !== undefined ? { duration: payload.duration } : {}),
           ...(payload.issueDate !== undefined ? { issueDate: payload.issueDate } : {}),

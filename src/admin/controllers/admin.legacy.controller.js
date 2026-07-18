@@ -1,5 +1,15 @@
 const LegacyCertificate = require("../../models/LegacyCertificate");
 
+const capitalizeName = (name) => {
+  if (name === undefined || name === null) return name;
+  const str = String(name).trim();
+  if (!str) return str;
+  return str
+    .split(/\s+/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
+};
+
 const listLegacyCertificates = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, search = "" } = req.query;
@@ -66,6 +76,8 @@ const updateLegacyCertificate = async (req, res, next) => {
       if (payload[field] !== undefined) {
         if (field === 'issueDate' || field === 'dateOfBirth') {
           cert[field] = payload[field] ? new Date(payload[field]) : null;
+        } else if (field === 'studentName') {
+          cert[field] = capitalizeName(payload[field]);
         } else {
           cert[field] = payload[field];
         }

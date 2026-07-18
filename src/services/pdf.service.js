@@ -151,9 +151,8 @@ const generateCertificatePDF = async (record) => {
   const certifyFont = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
   const titleFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
   
-  // Embed GreatVibes cursive font instead of standard TimesRomanBoldItalic
-  const fontBuffer = await fs.readFile(path.resolve(__dirname, '../assets/fonts/GreatVibes-Regular.ttf'));
-  const nameFont = await pdfDoc.embedFont(fontBuffer);
+  // Use standard TimesRomanBoldItalic for student name to avoid spacing/rendering bugs
+  const nameFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBoldItalic);
 
   const courseRegularFont = await pdfDoc.embedFont(StandardFonts.TimesRoman);
   const courseBoldFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
@@ -454,13 +453,13 @@ const generateCertificatePDF = async (record) => {
     color: black
   });
 
-  // STUDENT NAME (Cursive/Script Equivalent, Large size, Navy color, Gold underline)
+  // STUDENT NAME (TimesRomanBoldItalic, Large size, Navy color, Gold underline)
   curY -= 48;
   const name = safe(record.fullName);
   page.drawText(name, {
-    x: cx(name, nameFont, 46, W), // Sized to 46 for cursive font visibility
+    x: cx(name, nameFont, 36, W),
     y: curY,
-    size: 46,
+    size: 36,
     font: nameFont,
     color: dark
   });
