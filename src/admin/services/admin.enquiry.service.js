@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Enquiry = require("../../models/Enquiry");
 
 const ALLOWED_ADMIN_STATUSES = [
@@ -29,7 +30,11 @@ const getEnquiryByHumanId = async (enquiryId) => {
     throw error;
   }
 
-  const enquiry = await Enquiry.findOne({ enquiryId });
+  const query = mongoose.Types.ObjectId.isValid(enquiryId)
+    ? { $or: [{ enquiryId }, { _id: enquiryId }] }
+    : { enquiryId };
+
+  const enquiry = await Enquiry.findOne(query);
 
   if (!enquiry) {
     const error = new Error("Enquiry not found");
@@ -166,7 +171,11 @@ module.exports = {
   },
 
   async deleteEnquiry(enquiryId) {
-    const deleted = await Enquiry.findOneAndDelete({ enquiryId });
+    const query = mongoose.Types.ObjectId.isValid(enquiryId)
+      ? { $or: [{ enquiryId }, { _id: enquiryId }] }
+      : { enquiryId };
+
+    const deleted = await Enquiry.findOneAndDelete(query);
 
     if (!deleted) {
       const error = new Error("Enquiry not found");
