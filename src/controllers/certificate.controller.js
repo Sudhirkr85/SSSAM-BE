@@ -229,49 +229,9 @@ const getStatusByApplicationId = async (req, res, next) => {
     next(error);
   }
 };
-// APPROVE
-const approveApplicationByAdmin = async (req, res, next) => {
-  try {
-    const { applicationId } = req.params;
-
-    const application = await approveApplication(applicationId);
-
-    return sendSuccess(res, 200, {
-      message: "Application approved successfully",
-      applicationId: application.applicationId,
-      status: application.status,
-      certificateNumber: application.certificateNumber,
-      issueDate: formatIndianDate(application.issueDate),
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// REJECT
-const rejectApplicationByAdmin = async (req, res, next) => {
-  try {
-    const { applicationId } = req.params;
-    const { remarks } = req.body;
-
-    const application = await rejectApplication(applicationId, remarks);
-
-    return sendSuccess(res, 200, {
-      message: "Application rejected successfully",
-      applicationId: application.applicationId,
-      status: application.status,
-      remarks: application.remarks,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
 module.exports = {
   applyCertificate,
   verifyCertificateByNumber,
   downloadCertificate,
   getStatusByApplicationId,
-  approveApplicationByAdmin,
-  rejectApplicationByAdmin,
 };
