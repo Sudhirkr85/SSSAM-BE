@@ -80,10 +80,6 @@ const certificateRecordSchema = new mongoose.Schema(
       enum: ["pending", "approved", "rejected"],
       default: "pending",
     },
-    approvedAt: {
-      type: Date,
-      default: null,
-    },
     rejectionReason: {
       type: String,
       default: null,

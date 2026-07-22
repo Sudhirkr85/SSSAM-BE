@@ -87,17 +87,8 @@ const certificateApplicationSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
-    remarks: {
-      type: String,
-      default: null,
-      trim: true,
-    },
 
     // 🔥 NEW FIELDS (ADMIN)
-    approvedAt: {
-      type: Date,
-      default: null,
-    },
     rejectionReason: {
       type: String,
       default: null,

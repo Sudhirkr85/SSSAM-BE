@@ -2,8 +2,6 @@ const {
   applyForCertificate,
   verifyCertificate,
   getApplicationStatus,
-  approveApplication,
-  rejectApplication,
   getCertificateForDownload,
 } = require("../services/certificate.service");
 

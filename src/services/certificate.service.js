@@ -117,62 +117,6 @@ const applyForCertificate = async (payload) => {
   return created;
 };
 
-// =============================
-// ✅ APPROVE
-// =============================
-const approveApplication = async (applicationId) => {
-  const application = await CertificateApplication.findOne({ applicationId });
-
-  if (!application) {
-    throw createHttpError(404, "Application not found");
-  }
-
-  if (!application.certificateNumber) {
-    application.certificateNumber = await generateCertificateNumber();
-  }
-
-  application.status = "Approved";
-  application.issueDate = new Date();
-
-  await application.save();
-
-  await CertificateRecord.updateOne(
-    { certificateNumber: application.certificateNumber },
-    {
-      certificateNumber: application.certificateNumber,
-      fullName: application.fullName,
-      dateOfBirth: application.dateOfBirth,
-      course: application.course,
-      certificateType: application.certificateType,
-      duration: application.duration,
-      issueDate: application.issueDate,
-      instituteName: "SSSAM Academy",
-      status: "Verified",
-      applicationId: application._id,
-      qualification: application.qualification,
-    },
-    { upsert: true },
-  );
-
-  // 📧 Email
-  sendEmailAsync(() =>
-    sendStudentEmail({
-      name: application.fullName,
-      email: application.email,
-      course: application.course,
-      certificateType: application.certificateType,
-      applicationId: application.applicationId,
-      certificateNumber: application.certificateNumber,
-      duration: application.duration,
-      status: "Approved",
-      subject: "Application Approved - SSSAM Academy",
-      statusMessage: "Your certificate has been generated.",
-      date: formatIndianDate(application.issueDate),
-    }),
-  );
-
-  return application;
-};
 
 // =============================
 // ✅ VERIFY
@@ -222,24 +166,6 @@ const getApplicationStatus = async (applicationId) => {
 };
 
 // =============================
-// ✅ REJECT
-// =============================
-const rejectApplication = async (applicationId, remarks) => {
-  const application = await CertificateApplication.findOne({ applicationId });
-
-  if (!application) {
-    throw createHttpError(404, "Application not found");
-  }
-
-  application.status = "Rejected";
-  application.remarks = remarks;
-
-  await application.save();
-
-  return application;
-};
-
-// =============================
 // ✅ DOWNLOAD
 // =============================
 const getCertificateForDownload = async (certificateNumber, dateOfBirth) => {
@@ -282,9 +208,7 @@ const getCertificateForDownload = async (certificateNumber, dateOfBirth) => {
 
 module.exports = {
   applyForCertificate,
-  approveApplication,
   verifyCertificate,
   getApplicationStatus,
-  rejectApplication,
   getCertificateForDownload,
 };
