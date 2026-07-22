@@ -1,8 +1,10 @@
 const HiringRequest = require("../models/HiringRequest");
-const { nanoid } = require("nanoid");
+const crypto = require("crypto");
+
+const generateId = () => crypto.randomBytes(4).toString("hex").toUpperCase();
 
 const submitHiringRequest = async (data, ipAddress) => {
-  const requestId = "HIR-" + nanoid(8).toUpperCase();
+  const requestId = "HIR-" + generateId();
 
   const request = new HiringRequest({
     requestId,

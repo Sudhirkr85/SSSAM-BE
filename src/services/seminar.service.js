@@ -1,8 +1,10 @@
 const SeminarBooking = require("../models/SeminarBooking");
-const { nanoid } = require("nanoid");
+const crypto = require("crypto");
+
+const generateId = () => crypto.randomBytes(4).toString("hex").toUpperCase();
 
 const submitSeminarBooking = async (data, ipAddress) => {
-  const bookingId = "SEM-" + nanoid(8).toUpperCase();
+  const bookingId = "SEM-" + generateId();
 
   const booking = new SeminarBooking({
     bookingId,
