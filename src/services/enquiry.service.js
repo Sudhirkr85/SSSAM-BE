@@ -11,7 +11,6 @@ const submitEnquiry = async (enquiryData, ipAddress) => {
     phoneNumber: enquiryData.phoneNumber,
     course: enquiryData.course,
     customCourseName: enquiryData.customCourseName || "",
-    message: enquiryData.message || "",
     status: "Pending",
     ipAddress,
   });

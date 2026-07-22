@@ -127,7 +127,7 @@ function getAdminEmailTemplate(data) {
           </p>
 
           <p><b>Course:</b> ${data.course}</p>
-          <p><b>Enquiry Type:</b> Demo Class Request</p>
+          <p><b>Enquiry Type:</b> Course Enquiry</p>
           <p><b>Class Mode:</b> ${data.duration}</p>
           <p><b>Date:</b> ${data.date}</p>
 

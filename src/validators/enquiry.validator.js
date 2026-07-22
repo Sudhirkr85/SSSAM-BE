@@ -26,9 +26,7 @@ const enquirySchema = Joi.object({
         'any.required': 'Please enter course name'
       }),
       otherwise: Joi.optional().allow('', null)
-    }),
-
-  message: Joi.string().trim().optional().allow('')
+    })
 });
 
 const enquiryIdParamSchema = Joi.object({

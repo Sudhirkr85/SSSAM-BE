@@ -1,6 +1,6 @@
 const express = require('express');
 const {
-  bookDemoClass,
+  createEnquiry,
   getEnquiryStatusById
 } = require('../controllers/enquiry.controller');
 const {
@@ -13,7 +13,7 @@ const enquiryLimiter = require('../middlewares/enquiryLimiter');
 const router = express.Router();
 
 // Public routes
-router.post('/', enquiryLimiter, validate(enquirySchema), bookDemoClass);
+router.post('/', enquiryLimiter, validate(enquirySchema), createEnquiry);
 router.get('/status/:enquiryId', validate(enquiryIdParamSchema, 'params'), getEnquiryStatusById);
 
 module.exports = router;

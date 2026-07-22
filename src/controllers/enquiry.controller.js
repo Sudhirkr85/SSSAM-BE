@@ -54,9 +54,9 @@ const syncEnquiryToCRM = async (payload) => {
 };
 
 // ===============================
-// BOOK DEMO (FIXED)
+// CREATE ENQUIRY
 // ===============================
-const bookDemoClass = async (req, res, next) => {
+const createEnquiry = async (req, res, next) => {
   const ipAddress = req.ip || req.connection.remoteAddress;
 
   let enquiry = null;
@@ -97,7 +97,7 @@ const bookDemoClass = async (req, res, next) => {
 
   // ✅ Response
   return sendSuccess(res, 201, {
-    message: "Demo class enquiry submitted successfully",
+    message: "Enquiry submitted successfully",
     enquiryId: enquiry?.enquiryId || null,
     status: enquiry?.status || "Pending",
   });
@@ -148,7 +148,7 @@ const removeEnquiry = async (req, res, next) => {
 };
 
 module.exports = {
-  bookDemoClass,
+  createEnquiry,
   getEnquiryStatusById,
   listAllEnquiries,
   updateEnquiry,

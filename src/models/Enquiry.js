@@ -37,12 +37,6 @@ const enquirySchema = new mongoose.Schema(
       },
     },
 
-    message: {
-      type: String,
-      trim: true,
-      default: "",
-    },
-
     // OLD STATUS (DO NOT TOUCH)
     status: {
       type: String,
