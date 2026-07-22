@@ -1,9 +1,10 @@
 const Joi = require('joi');
 
 const enquirySchema = Joi.object({
-  fullName: Joi.string().trim().required().messages({
+  fullName: Joi.string().trim().pattern(/^[a-zA-Z\s.'-]+$/).required().messages({
     'string.empty': 'Full name is required',
-    'any.required': 'Full name is required'
+    'any.required': 'Full name is required',
+    'string.pattern.base': 'Full name must contain only letters and spaces'
   }),
   email: Joi.string().trim().email().optional().allow('', null).messages({
     'string.email': 'Enter a valid email address'

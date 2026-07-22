@@ -3,7 +3,15 @@ const Joi = require('joi');
 const certificateTypes = ['Training', 'Workshop', 'Internship', 'Industrial Training', 'Academic Training', 'Corporate Training'];
 
 const applySchema = Joi.object({
-  fullName: Joi.string().trim().min(2).max(120).required(),
+  fullName: Joi.string()
+    .trim()
+    .pattern(/^[a-zA-Z\s.'-]+$/)
+    .min(2)
+    .max(120)
+    .required()
+    .messages({
+      'string.pattern.base': 'fullName must contain only letters and spaces'
+    }),
   phoneNumber: Joi.string()
     .trim()
     .custom((val, helpers) => {
