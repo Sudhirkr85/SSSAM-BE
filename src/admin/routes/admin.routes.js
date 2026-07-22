@@ -86,4 +86,16 @@ router.delete("/gallery/:id", galleryController.deleteGalleryItem);
 const settingsController = require("../../controllers/settings.controller");
 router.post("/settings", settingsController.updateSetting);
 
+// Admin Seminar routes
+const adminSeminarController = require("../controllers/admin.seminar.controller");
+router.get("/seminars", adminSeminarController.listSeminarBookings);
+router.patch("/seminars/:bookingId/status", adminSeminarController.updateSeminarStatus);
+router.delete("/seminars/:bookingId", adminSeminarController.deleteSeminarBooking);
+
+// Admin Hiring routes
+const adminHiringController = require("../controllers/admin.hiring.controller");
+router.get("/hiring-requests", adminHiringController.listHiringRequests);
+router.patch("/hiring-requests/:requestId/status", adminHiringController.updateHiringStatus);
+router.delete("/hiring-requests/:requestId", adminHiringController.deleteHiringRequest);
+
 module.exports = router;

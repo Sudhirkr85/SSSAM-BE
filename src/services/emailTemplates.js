@@ -161,7 +161,141 @@ function getAdminEmailTemplate(data) {
   </div>
   `;
 }
+// ===============================
+// 🏫 SEMINAR BOOKING ADMIN TEMPLATE
+// ===============================
+function getSeminarAdminEmailTemplate(data) {
+  const callLink = `tel:${data.mobileNumber}`;
+  const whatsappLink = `https://wa.me/91${data.mobileNumber}?text=Hello%20${encodeURIComponent(data.coordinatorName)},%20regarding%20your%20seminar%20request%20on%20${encodeURIComponent(data.topic)}.`;
+
+  return `
+  <div style="background:#f4f4f4;font-family:Segoe UI,Arial;">
+    <div style="max-width:520px;margin:30px auto;background:#fff;border-radius:16px;box-shadow:0 8px 25px rgba(0,0,0,0.08);overflow:hidden;">
+      <div style="background:#111;color:#fff;padding:18px;text-align:center;">
+        <h2 style="margin:0;">New Seminar Request 🎓</h2>
+        <p style="font-size:12px;color:#ccc;">SSSAM Academy Admin Notification</p>
+      </div>
+      <div style="padding:20px;">
+        <p style="font-size:14px;color:#333;">A college has requested a free IT seminar on <b>${data.topic}</b>.</p>
+        <div style="background:#fafafa;padding:15px;border-radius:10px;border:1px solid #eee;margin-top:15px;">
+          <p><b>College:</b> ${data.collegeName}</p>
+          <p><b>Coordinator:</b> ${data.coordinatorName}</p>
+          <p><b>Mobile:</b> <a href="${callLink}" style="color:#16a34a;text-decoration:none;">${data.mobileNumber}</a></p>
+          <p><b>Email:</b> ${data.email || "Not provided"}</p>
+          <p><b>Topic:</b> ${data.topic}</p>
+          <p><b>Booking ID:</b> ${data.bookingId}</p>
+          <p><b>Date:</b> ${data.date}</p>
+        </div>
+        <div style="text-align:center;margin-top:20px;">
+          <a href="${callLink}" style="background:#111;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;margin-right:5px;">Call Coordinator</a>
+          <a href="${whatsappLink}" style="background:#25D366;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;">WhatsApp</a>
+        </div>
+      </div>
+      <div style="text-align:center;padding:10px;font-size:12px;color:#777;">Admin Notification • SSSAM Academy</div>
+    </div>
+  </div>`;
+}
+
+// ===============================
+// 🏫 SEMINAR BOOKING CONFIRMATION TEMPLATE (for coordinator)
+// ===============================
+function getSeminarConfirmationEmailTemplate(data) {
+  const whatsappLink = `https://wa.me/919217031899?text=Hello%20SSSAM%20Academy,%20I%20want%20to%20follow%20up%20on%20my%20seminar%20request%20(ID:%20${data.bookingId})`;
+
+  return `
+  <div style="background:#f5f5f5;font-family:Segoe UI,Arial;">
+    <div style="max-width:500px;margin:40px auto;background:#fff;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,0.08);overflow:hidden;">
+      <div style="background:#111;padding:20px;text-align:center;color:#fff;">
+        <h2 style="margin:0;">SSSAM Academy</h2>
+        <p style="font-size:12px;color:#ccc;">Seminar Request Received ✅</p>
+      </div>
+      <div style="padding:25px;">
+        <p>Hello <b>${data.coordinatorName}</b>,</p>
+        <p>Thank you for reaching out! We have received your seminar request for <b>${data.collegeName}</b>.</p>
+        <div style="background:#fafafa;padding:15px;border-radius:10px;margin-top:15px;">
+          <p><b>Topic:</b> ${data.topic}</p>
+          <p><b>Booking ID:</b> ${data.bookingId}</p>
+        </div>
+        <p style="margin-top:15px;">Our coordinator will contact you within 24 hours to schedule a convenient date and time.</p>
+        <div style="text-align:center;margin-top:20px;">
+          <a href="${whatsappLink}" style="background:#25D366;color:#fff;padding:12px 25px;border-radius:8px;text-decoration:none;">Chat on WhatsApp 💬</a>
+        </div>
+      </div>
+      <div style="text-align:center;padding:10px;font-size:12px;color:#888;">SSSAM Academy • Gurugram</div>
+    </div>
+  </div>`;
+}
+
+// ===============================
+// 🏢 HIRING REQUEST ADMIN TEMPLATE
+// ===============================
+function getHiringAdminEmailTemplate(data) {
+  const callLink = `tel:${data.mobileNumber}`;
+  const whatsappLink = `https://wa.me/91${data.mobileNumber}?text=Hello%20${encodeURIComponent(data.hrName)},%20regarding%20your%20hiring%20request%20for%20${encodeURIComponent(data.techDomain)}%20from%20SSSAM%20Academy.`;
+
+  return `
+  <div style="background:#f4f4f4;font-family:Segoe UI,Arial;">
+    <div style="max-width:520px;margin:30px auto;background:#fff;border-radius:16px;box-shadow:0 8px 25px rgba(0,0,0,0.08);overflow:hidden;">
+      <div style="background:#111;color:#fff;padding:18px;text-align:center;">
+        <h2 style="margin:0;">New Hiring Request 🏢</h2>
+        <p style="font-size:12px;color:#ccc;">SSSAM Academy Admin Notification</p>
+      </div>
+      <div style="padding:20px;">
+        <p style="font-size:14px;color:#333;">A company wants to hire graduates for the domain <b>${data.techDomain}</b>.</p>
+        <div style="background:#fafafa;padding:15px;border-radius:10px;border:1px solid #eee;margin-top:15px;">
+          <p><b>Company:</b> ${data.companyName}</p>
+          <p><b>HR Name:</b> ${data.hrName}</p>
+          <p><b>Mobile:</b> <a href="${callLink}" style="color:#16a34a;text-decoration:none;">${data.mobileNumber}</a></p>
+          <p><b>Email:</b> <a href="mailto:${data.email}" style="color:#111;text-decoration:none;">${data.email}</a></p>
+          <p><b>Tech Domain:</b> ${data.techDomain}</p>
+          <p><b>Request ID:</b> ${data.requestId}</p>
+          <p><b>Date:</b> ${data.date}</p>
+        </div>
+        <div style="text-align:center;margin-top:20px;">
+          <a href="${callLink}" style="background:#111;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;margin-right:5px;">Call HR</a>
+          <a href="${whatsappLink}" style="background:#25D366;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;">WhatsApp</a>
+        </div>
+      </div>
+      <div style="text-align:center;padding:10px;font-size:12px;color:#777;">Admin Notification • SSSAM Academy</div>
+    </div>
+  </div>`;
+}
+
+// ===============================
+// 🏢 HIRING REQUEST CONFIRMATION TEMPLATE (for HR)
+// ===============================
+function getHiringConfirmationEmailTemplate(data) {
+  const whatsappLink = `https://wa.me/919217031899?text=Hello%20SSSAM%20Academy,%20I%20want%20to%20follow%20up%20on%20my%20hiring%20request%20(ID:%20${data.requestId})`;
+
+  return `
+  <div style="background:#f5f5f5;font-family:Segoe UI,Arial;">
+    <div style="max-width:500px;margin:40px auto;background:#fff;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,0.08);overflow:hidden;">
+      <div style="background:#111;padding:20px;text-align:center;color:#fff;">
+        <h2 style="margin:0;">SSSAM Academy</h2>
+        <p style="font-size:12px;color:#ccc;">Hiring Request Received ✅</p>
+      </div>
+      <div style="padding:25px;">
+        <p>Hello <b>${data.hrName}</b>,</p>
+        <p>Thank you for your interest in hiring from <b>SSSAM Academy</b>! We have received your hiring request for <b>${data.techDomain}</b> from <b>${data.companyName}</b>.</p>
+        <div style="background:#fafafa;padding:15px;border-radius:10px;margin-top:15px;">
+          <p><b>Tech Domain:</b> ${data.techDomain}</p>
+          <p><b>Request ID:</b> ${data.requestId}</p>
+        </div>
+        <p style="margin-top:15px;">Our placement coordinator will reach out to you within 24 hours with candidate profiles that match your requirement.</p>
+        <div style="text-align:center;margin-top:20px;">
+          <a href="${whatsappLink}" style="background:#25D366;color:#fff;padding:12px 25px;border-radius:8px;text-decoration:none;">Chat on WhatsApp 💬</a>
+        </div>
+      </div>
+      <div style="text-align:center;padding:10px;font-size:12px;color:#888;">SSSAM Academy • Gurugram</div>
+    </div>
+  </div>`;
+}
+
 module.exports = {
   getStudentEmailTemplate,
-  getAdminEmailTemplate
+  getAdminEmailTemplate,
+  getSeminarAdminEmailTemplate,
+  getSeminarConfirmationEmailTemplate,
+  getHiringAdminEmailTemplate,
+  getHiringConfirmationEmailTemplate,
 };

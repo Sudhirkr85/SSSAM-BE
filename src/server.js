@@ -12,6 +12,8 @@ const organizationRoutes = require("./routes/organization.routes");
 const placementRoutes = require("./routes/placement.routes");
 const blogRoutes = require("./routes/blog.routes");
 const notesRoutes = require("./routes/notes.routes");
+const seminarRoutes = require("./routes/seminar.routes");
+const hiringRoutes = require("./routes/hiring.routes");
 const settingsRoutes = require("./routes/settings.routes");
 const galleryRoutes = require("./routes/gallery.routes");
 const notFound = require("./middlewares/notFound");
@@ -55,6 +57,8 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/notes", notesRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/gallery", galleryRoutes);
+app.use("/api/seminar", seminarRoutes);
+app.use("/api/hiring", hiringRoutes);
 
 
 app.use(notFound);
