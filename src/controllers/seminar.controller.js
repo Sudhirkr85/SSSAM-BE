@@ -24,16 +24,18 @@ const createSeminarBooking = async (req, res) => {
     console.error("❌ DB Error (seminar):", error.message);
   }
 
-  // Send emails (non-blocking)
-  sendSeminarEmails({
-    collegeName: req.body.collegeName,
-    coordinatorName: req.body.coordinatorName,
-    mobileNumber: req.body.mobileNumber,
-    email: req.body.email || null,
-    topic: req.body.topic,
-    bookingId: booking?.bookingId || "N/A",
-    date: formatIndianDateTime(new Date()),
-  }).catch((err) => console.error("❌ Email Error (seminar):", err.message));
+  // Send emails asynchronously (setImmediate guarantees zero API response delay)
+  setImmediate(() => {
+    sendSeminarEmails({
+      collegeName: req.body.collegeName,
+      coordinatorName: req.body.coordinatorName,
+      mobileNumber: req.body.mobileNumber,
+      email: req.body.email || null,
+      topic: req.body.topic,
+      bookingId: booking?.bookingId || "N/A",
+      date: formatIndianDateTime(new Date()),
+    }).catch((err) => console.error("❌ Email Error (seminar):", err.message));
+  });
 
   return res.status(201).json({
     success: true,

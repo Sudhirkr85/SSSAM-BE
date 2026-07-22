@@ -24,16 +24,18 @@ const createHiringRequest = async (req, res) => {
     console.error("❌ DB Error (hiring):", error.message);
   }
 
-  // Send emails (non-blocking)
-  sendHiringEmails({
-    companyName: req.body.companyName,
-    hrName: req.body.hrName,
-    mobileNumber: req.body.mobileNumber,
-    email: req.body.email,
-    techDomain: req.body.techDomain,
-    requestId: request?.requestId || "N/A",
-    date: formatIndianDateTime(new Date()),
-  }).catch((err) => console.error("❌ Email Error (hiring):", err.message));
+  // Send emails asynchronously (setImmediate guarantees zero API response delay)
+  setImmediate(() => {
+    sendHiringEmails({
+      companyName: req.body.companyName,
+      hrName: req.body.hrName,
+      mobileNumber: req.body.mobileNumber,
+      email: req.body.email,
+      techDomain: req.body.techDomain,
+      requestId: request?.requestId || "N/A",
+      date: formatIndianDateTime(new Date()),
+    }).catch((err) => console.error("❌ Email Error (hiring):", err.message));
+  });
 
   return res.status(201).json({
     success: true,
