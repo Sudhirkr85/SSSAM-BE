@@ -87,7 +87,7 @@ async function createBlog(req, res, next) {
       content,
       imageUrl,
       type: type || 'Blog',
-      status: status || 'Draft',
+      status: status || 'Published',
       active: active !== undefined ? (active === 'true' || active === true) : true,
       tags: tagsArray,
       hiringDetails: type === 'Hiring' ? {
