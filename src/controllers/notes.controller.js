@@ -13,6 +13,23 @@ async function getNotes(req, res, next) {
   }
 }
 
+// Public: Get a single note by ID
+async function getNoteById(req, res, next) {
+  try {
+    const { id } = req.params;
+    let note;
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      note = await StudyNotes.findById(id);
+    }
+    if (!note || !note.active) {
+      return res.status(404).json({ message: 'Study note not found.' });
+    }
+    return res.status(200).json(note);
+  } catch (error) {
+    next(error);
+  }
+}
+
 // Admin: Get all notes (including inactive)
 async function getAdminNotes(req, res, next) {
   try {
@@ -142,6 +159,7 @@ async function deleteNote(req, res, next) {
 
 module.exports = {
   getNotes,
+  getNoteById,
   getAdminNotes,
   downloadNoteAndSaveLead,
   createNote,
