@@ -13,13 +13,21 @@ async function getNotes(req, res, next) {
   }
 }
 
-// Public: Get a single note by ID
+// Public: Get a single note by ID or slug-style identifier
 async function getNoteById(req, res, next) {
   try {
     const { id } = req.params;
     let note;
     if (id.match(/^[0-9a-fA-F]{24}$/)) {
       note = await StudyNotes.findById(id);
+    }
+    // If not found by ObjectId (or id is a slug), search by title slug match
+    if (!note) {
+      const allNotes = await StudyNotes.find({ active: true });
+      note = allNotes.find(n => {
+        const slug = n.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        return slug === id || String(n._id) === id;
+      });
     }
     if (!note || !note.active) {
       return res.status(404).json({ message: 'Study note not found.' });
@@ -50,7 +58,18 @@ async function downloadNoteAndSaveLead(req, res, next) {
       return res.status(400).json({ message: 'fullName and phoneNumber are required to download study notes.' });
     }
 
-    const note = await StudyNotes.findById(id);
+    let note;
+    if (id.match(/^[0-9a-fA-F]{24}$/)) {
+      note = await StudyNotes.findById(id);
+    }
+    // If not found by ObjectId (or id is a slug), search by title slug match
+    if (!note) {
+      const allNotes = await StudyNotes.find({ active: true });
+      note = allNotes.find(n => {
+        const slug = n.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        return slug === id || String(n._id) === id;
+      });
+    }
     if (!note || !note.active) {
       return res.status(404).json({ message: 'Study notes not found.' });
     }
