@@ -1,6 +1,17 @@
 const GalleryItem = require('../models/GalleryItem');
 const { uploadToS3, deleteFromS3 } = require('../utils/s3');
 
+function parseBoolean(val) {
+  if (val === undefined || val === null) return undefined;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') {
+    const s = val.trim().toLowerCase();
+    return s === 'true' || s === '1' || s === 'yes';
+  }
+  if (typeof val === 'number') return val !== 0;
+  return Boolean(val);
+}
+
 // Public: Get all active gallery images
 async function getGallery(req, res, next) {
   try {
@@ -34,12 +45,13 @@ async function createGalleryItem(req, res, next) {
     }
 
     const imageUrl = await uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype);
+    const activeBool = active !== undefined ? parseBoolean(active) : true;
 
     const item = await GalleryItem.create({
       title,
       category,
       altText: altText || title,
-      active: active !== undefined ? (active === 'true' || active === true) : true,
+      active: activeBool,
       imageUrl,
     });
 
@@ -63,7 +75,7 @@ async function updateGalleryItem(req, res, next) {
     if (title) item.title = title;
     if (category) item.category = category;
     if (altText !== undefined) item.altText = altText;
-    if (active !== undefined) item.active = active === 'true' || active === true;
+    if (active !== undefined) item.active = parseBoolean(active);
 
     // Replace image in S3 if a new file is uploaded
     if (req.file) {

@@ -1,7 +1,18 @@
 const StudyNotes = require('../models/StudyNotes');
 const Enquiry = require('../models/Enquiry');
-const { uploadToS3 } = require('../utils/s3');
+const { uploadToS3, deleteFromS3 } = require('../utils/s3');
 const { generateEnquiryId } = require('../utils/enquiryId');
+
+function parseBoolean(val) {
+  if (val === undefined || val === null) return undefined;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') {
+    const s = val.trim().toLowerCase();
+    return s === 'true' || s === '1' || s === 'yes';
+  }
+  if (typeof val === 'number') return val !== 0;
+  return Boolean(val);
+}
 
 // Public: Get all active notes
 async function getNotes(req, res, next) {
@@ -112,12 +123,13 @@ async function createNote(req, res, next) {
     }
 
     const fileUrl = await uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype);
+    const activeBool = active !== undefined ? parseBoolean(active) : true;
 
     const newNote = await StudyNotes.create({
       title,
       description,
       category,
-      active: active !== undefined ? (active === 'true' || active === true) : true,
+      active: activeBool,
       fileUrl,
     });
 
@@ -141,9 +153,12 @@ async function updateNote(req, res, next) {
     if (title) note.title = title;
     if (description) note.description = description;
     if (category) note.category = category;
-    if (active !== undefined) note.active = active === 'true' || active === true;
+    if (active !== undefined) note.active = parseBoolean(active);
 
     if (req.file) {
+      if (note.fileUrl) {
+        await deleteFromS3(note.fileUrl);
+      }
       note.fileUrl = await uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype);
     }
 
@@ -165,7 +180,6 @@ async function deleteNote(req, res, next) {
 
     // Delete PDF file from S3/R2
     if (note.fileUrl) {
-      const { deleteFromS3 } = require('../utils/s3');
       await deleteFromS3(note.fileUrl);
     }
 

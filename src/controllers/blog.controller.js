@@ -1,6 +1,17 @@
 const Blog = require('../models/Blog');
-const { uploadToS3 } = require('../utils/s3');
+const { uploadToS3, deleteFromS3 } = require('../utils/s3');
 const { generateBlogWithGrok } = require('../utils/grok');
+
+function parseBoolean(val) {
+  if (val === undefined || val === null) return undefined;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') {
+    const s = val.trim().toLowerCase();
+    return s === 'true' || s === '1' || s === 'yes';
+  }
+  if (typeof val === 'number') return val !== 0;
+  return Boolean(val);
+}
 
 // Public: Get all active, published blogs/hirings
 async function getBlogs(req, res, next) {
@@ -79,6 +90,7 @@ async function createBlog(req, res, next) {
     }
 
     const tagsArray = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
+    const activeBool = active !== undefined ? parseBoolean(active) : true;
 
     const newBlog = await Blog.create({
       title,
@@ -88,7 +100,7 @@ async function createBlog(req, res, next) {
       imageUrl,
       type: type || 'Blog',
       status: status || 'Published',
-      active: active !== undefined ? (active === 'true' || active === true) : true,
+      active: activeBool,
       tags: tagsArray,
       hiringDetails: type === 'Hiring' ? {
         source: hiringSource || 'external',
@@ -130,7 +142,7 @@ async function updateBlog(req, res, next) {
     const effectiveType = type || blog.type;
     if (type) blog.type = type;
     if (status) blog.status = status;
-    if (active !== undefined) blog.active = active === 'true' || active === true;
+    if (active !== undefined) blog.active = parseBoolean(active);
 
     if (tags !== undefined) {
       blog.tags = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
@@ -147,6 +159,9 @@ async function updateBlog(req, res, next) {
     }
 
     if (req.file) {
+      if (blog.imageUrl) {
+        await deleteFromS3(blog.imageUrl);
+      }
       blog.imageUrl = await uploadToS3(req.file.buffer, req.file.originalname, req.file.mimetype);
     }
 
@@ -168,7 +183,6 @@ async function deleteBlog(req, res, next) {
 
     // Delete cover banner from S3/R2
     if (blog.imageUrl) {
-      const { deleteFromS3 } = require('../utils/s3');
       await deleteFromS3(blog.imageUrl);
     }
 

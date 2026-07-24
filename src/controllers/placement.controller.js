@@ -1,5 +1,16 @@
 const Placement = require('../models/Placement');
-const { uploadToS3 } = require('../utils/s3');
+const { uploadToS3, deleteFromS3 } = require('../utils/s3');
+
+function parseBoolean(val) {
+  if (val === undefined || val === null) return undefined;
+  if (typeof val === 'boolean') return val;
+  if (typeof val === 'string') {
+    const s = val.trim().toLowerCase();
+    return s === 'true' || s === '1' || s === 'yes';
+  }
+  if (typeof val === 'number') return val !== 0;
+  return Boolean(val);
+}
 
 // Public: Get all active placements
 async function getPlacements(req, res, next) {
@@ -43,13 +54,15 @@ async function createPlacement(req, res, next) {
       companyLogoUrl = await uploadToS3(logoFile.buffer, logoFile.originalname, logoFile.mimetype);
     }
 
+    const activeBool = active !== undefined ? parseBoolean(active) : true;
+
     const newPlacement = await Placement.create({
       studentName,
       companyName,
       packageLPA: packageLPA ? parseFloat(packageLPA) : undefined,
       designation,
       placedYear: placedYear ? parseInt(placedYear) : undefined,
-      active: active !== undefined ? (active === 'true' || active === true) : true,
+      active: activeBool,
       photoUrl,
       companyLogoUrl,
     });
@@ -73,18 +86,24 @@ async function updatePlacement(req, res, next) {
 
     if (studentName) placement.studentName = studentName;
     if (companyName) placement.companyName = companyName;
-    if (packageLPA) placement.packageLPA = parseFloat(packageLPA);
+    if (packageLPA !== undefined) placement.packageLPA = packageLPA ? parseFloat(packageLPA) : undefined;
     if (designation) placement.designation = designation;
-    if (placedYear) placement.placedYear = parseInt(placedYear);
-    if (active !== undefined) placement.active = active === 'true' || active === true;
+    if (placedYear !== undefined) placement.placedYear = placedYear ? parseInt(placedYear) : undefined;
+    if (active !== undefined) placement.active = parseBoolean(active);
 
-    // Handle new S3 image uploads if provided
+    // Handle new S3 image uploads if provided, removing old images
     if (req.files) {
-      if (req.files.photo) {
+      if (req.files.photo && req.files.photo.length > 0) {
+        if (placement.photoUrl) {
+          await deleteFromS3(placement.photoUrl);
+        }
         const photoFile = req.files.photo[0];
         placement.photoUrl = await uploadToS3(photoFile.buffer, photoFile.originalname, photoFile.mimetype);
       }
-      if (req.files.companyLogo) {
+      if (req.files.companyLogo && req.files.companyLogo.length > 0) {
+        if (placement.companyLogoUrl) {
+          await deleteFromS3(placement.companyLogoUrl);
+        }
         const logoFile = req.files.companyLogo[0];
         placement.companyLogoUrl = await uploadToS3(logoFile.buffer, logoFile.originalname, logoFile.mimetype);
       }
@@ -107,7 +126,6 @@ async function deletePlacement(req, res, next) {
     }
 
     // Delete associated images from S3/R2
-    const { deleteFromS3 } = require('../utils/s3');
     if (placement.photoUrl) {
       await deleteFromS3(placement.photoUrl);
     }
