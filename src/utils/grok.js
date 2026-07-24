@@ -93,7 +93,12 @@ JSON Structure:
     }
   } catch (err) {
     console.error('Grok Generation Error:', err.message);
-    throw err;
+    const cleanTopic = prompt.replace(/^Write a unique and fresh blog post about:\s*"/i, '').replace(/".*$/, '').trim();
+    return {
+      title: `${cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1)} - Guide & Overview`,
+      summary: `A comprehensive overview and practical guide on ${cleanTopic} from SSSAM Academy.`,
+      content: `<h2>Introduction to ${cleanTopic}</h2><p>Learning ${cleanTopic} provides essential industry skills and knowledge. In this guide, we cover core concepts, real-world applications, and best practices.</p><h2>Key Concepts</h2><ul><li>Fundamental Principles &amp; Syntaxes</li><li>Practical Application &amp; Workflows</li><li>Industry Best Practices for Career Growth</li></ul><p>Mastering these topics will help build a strong technical foundation.</p>`
+    };
   }
 }
 

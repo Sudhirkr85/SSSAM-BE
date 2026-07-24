@@ -127,6 +127,7 @@ async function updateBlog(req, res, next) {
     if (title) blog.title = title;
     if (summary) blog.summary = summary;
     if (content) blog.content = content;
+    const effectiveType = type || blog.type;
     if (type) blog.type = type;
     if (status) blog.status = status;
     if (active !== undefined) blog.active = active === 'true' || active === true;
@@ -135,7 +136,7 @@ async function updateBlog(req, res, next) {
       blog.tags = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [];
     }
 
-    if (blog.type === 'Hiring' || type === 'Hiring') {
+    if (effectiveType === 'Hiring') {
       blog.hiringDetails = {
         source: hiringSource !== undefined ? hiringSource : (blog.hiringDetails?.source || 'external'),
         company: company !== undefined ? company : (blog.hiringDetails?.company || ''),
