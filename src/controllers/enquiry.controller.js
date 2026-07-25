@@ -28,10 +28,15 @@ const CRM_PUBLIC_ENQUIRY_URL =
   "https://sssam-r3pz.onrender.com/api/enquiries/public";
 
 const syncEnquiryToCRM = async (payload) => {
+  const courseName =
+    payload.course === "Others" && payload.customCourseName
+      ? payload.customCourseName
+      : payload.course;
+
   const crmPayload = {
     name: payload.fullName,
     mobile: payload.phoneNumber,
-    course: payload.course,
+    course: courseName,
   };
 
   if (payload.email) {
@@ -68,12 +73,10 @@ const createEnquiry = async (req, res, next) => {
     console.error("❌ DB Error:", error.message);
   }
 
-  // 🚫 CRM Sync disabled during testing phase. Uncomment when going live.
-  /*
+  // ✅ CRM Sync enabled
   syncEnquiryToCRM(req.body).catch((error) =>
     console.error("CRM Sync Error", error.message),
   );
-  */
 
   // ✅ FIXED PAYLOAD (NO UNDEFINED)
   const emailData = {
