@@ -19,9 +19,14 @@ Your task is to write high-quality, engaging, and search-engine-optimized educat
 Respond ONLY with a JSON object containing the fields: "title", "summary", "content" (in HTML format), and "tags" (an array of 5-7 lowercase relevant SEO tags).
 Do not wrap your output in markdown code blocks like \`\`\`json. Just output the raw JSON.
 
+Formatting Rules:
+1. "title" MUST be formatted in proper Title Case with correct capitalization (e.g., "Emerging Tech Landscapes: Top IT Trends in 2026"). Technical acronyms (IT, AI, ML, SEO, JS, AWS, SQL, MERN) MUST be in UPPERCASE.
+2. "content" MUST use clean, well-spaced HTML with <h2>, <h3>, <p>, <ul>, <li>, and <strong> tags.
+3. "summary" MUST be a crisp 2-3 sentence meta description.
+
 JSON Structure:
 {
-  "title": "SEO-friendly Title",
+  "title": "Title Case SEO-friendly Title",
   "summary": "Short 2-3 sentence meta description for search engines",
   "content": "<p>Intriguing introduction...</p><h2>Key Concepts</h2><p>Detailed analysis...</p>",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
