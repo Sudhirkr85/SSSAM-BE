@@ -666,7 +666,7 @@ const generateCertificatePDF = async (record) => {
     if (!clientUrl || clientUrl === '*' || clientUrl.includes('localhost')) {
       clientUrl = 'https://www.sssamacademy.com';
     }
-    const verifyUrl = `${clientUrl}/certificate.html?cert=${encodeURIComponent(record.certificateNumber)}`;
+    const verifyUrl = `${clientUrl}/certificate-services.html?tab=verify&cert=${encodeURIComponent(record.certificateNumber)}`;
     const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1, width: 140 });
     const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
     const qrImage = await pdfDoc.embedPng(qrBuffer);
