@@ -1,6 +1,6 @@
 const Blog = require('../models/Blog');
 const { uploadToS3, deleteFromS3 } = require('../utils/s3');
-const { generateBlogWithGrok } = require('../utils/grok');
+const { generateBlogWithGrok, generateTagsWithGrok } = require('../utils/grok');
 
 function parseBoolean(val) {
   if (val === undefined || val === null) return undefined;
@@ -54,12 +54,17 @@ async function getBlogBySlug(req, res, next) {
   }
 }
 
-// Admin: Generate Blog using Grok AI
+// Admin: Generate Blog or Tags using Grok AI
 async function generateAIBlog(req, res, next) {
   try {
-    const { prompt } = req.body;
+    const { prompt, tagsOnly } = req.body;
     if (!prompt) {
       return res.status(400).json({ message: 'prompt is required to generate AI content.' });
+    }
+
+    if (tagsOnly) {
+      const generatedTags = await generateTagsWithGrok(prompt);
+      return res.status(200).json(generatedTags);
     }
 
     const generated = await generateBlogWithGrok(prompt);
