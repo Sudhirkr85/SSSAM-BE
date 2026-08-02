@@ -14,8 +14,6 @@ const {
 // BREVO CONFIG
 // ===============================
 const client = SibApiV3Sdk.ApiClient.instance;
-client.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
-
 const emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 
 // ===============================
@@ -23,10 +21,17 @@ const emailApi = new SibApiV3Sdk.TransactionalEmailsApi();
 // ===============================
 async function sendEmail({ to, subject, html, useBcc = false }) {
   try {
+    const apiKey = process.env.BREVO_API_KEY;
+    if (!apiKey) {
+      console.error("❌ BREVO_API_KEY is missing in process.env");
+      throw new Error("BREVO_API_KEY is missing in environment variables");
+    }
+    client.authentications["api-key"].apiKey = apiKey;
+
     const emailData = {
       sender: {
         name: "SSSAM Academy",
-        email: process.env.SMTP_FROM,
+        email: process.env.SMTP_FROM || "support.sssam@gmail.com",
       },
       subject,
       htmlContent: html,
