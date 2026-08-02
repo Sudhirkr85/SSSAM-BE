@@ -24,11 +24,58 @@ const app = express();
 // Needed for correct client IP detection behind proxy (important for rate limiting).
 app.set("trust proxy", 1);
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: { policy: "unsafe-none" },
+  }),
+);
+
+const envOrigins = (process.env.CLIENT_URL || "*")
+  .split(",")
+  .map((url) => url.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+const defaultAllowedOrigins = [
+  "https://sssamacademy.com",
+  "https://www.sssamacademy.com",
+  "https://sudhirkr85.github.io",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:5500",
+];
+
+const allowedOrigins = Array.from(new Set([...envOrigins, ...defaultAllowedOrigins]));
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "*",
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+
+      if (process.env.CLIENT_URL === "*" || allowedOrigins.includes("*")) {
+        return callback(null, true);
+      }
+
+      const cleanOrigin = origin.replace(/\/$/, "");
+      const originWithoutWww = cleanOrigin.replace("https://www.", "https://").replace("http://www.", "http://");
+      const originWithWww = cleanOrigin.includes("://www.")
+        ? cleanOrigin
+        : cleanOrigin.replace("https://", "https://www.").replace("http://", "http://www.");
+
+      if (
+        allowedOrigins.includes(cleanOrigin) ||
+        allowedOrigins.includes(originWithoutWww) ||
+        allowedOrigins.includes(originWithWww) ||
+        cleanOrigin.startsWith("https://sudhirkr85.github.io")
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(null, true);
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Cache-Control", "Pragma"],
   }),
 );
 
