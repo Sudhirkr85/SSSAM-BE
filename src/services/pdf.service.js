@@ -551,7 +551,7 @@ const generateCertificatePDF = async (record) => {
     courseParts.push({ text: `${displayDuration} `, bold: true });
     courseParts.push({ text: `Training Program on`, bold: false });
 
-    wishText = "at SSSAM Academy.";
+    wishText = "conducted by SSSAM Academy.";
   } else {
     const certType = safe(record.certificateType).toLowerCase();
     if (certType.includes("internship")) {
@@ -560,21 +560,21 @@ const generateCertificatePDF = async (record) => {
       courseParts.push({ text: `${displayDuration} `, bold: true });
       courseParts.push({ text: `Professional Internship in `, bold: false });
 
-      wishText = "at SSSAM Academy, during which the candidate actively worked on live project assignments and demonstrated practical application of core industry tools and technologies.";
+      wishText = "at SSSAM Academy, during which the candidate actively contributed to live project assignments, demonstrated strong technical aptitude, and exhibited practical implementation of industry tools.";
     } else if (certType.includes("workshop")) {
       // 3. Workshop
       courseParts.push({ text: `for successfully completing the intensive `, bold: false });
       courseParts.push({ text: `${displayDuration} `, bold: true });
       courseParts.push({ text: `Technical Workshop on `, bold: false });
 
-      wishText = "at SSSAM Academy, demonstrating active participation and hands-on understanding of the subject.";
+      wishText = "at SSSAM Academy, demonstrating active participation, enthusiasm, and practical understanding of key concepts during the hands-on technical session.";
     } else {
       // 1. Regular Training
       courseParts.push({ text: `for successfully completing the `, bold: false });
       courseParts.push({ text: `${displayDuration} `, bold: true });
       courseParts.push({ text: `Training Program in `, bold: false });
 
-      wishText = "at SSSAM Academy, having met all the prescribed academic and practical requirements of the industry-relevant curriculum.";
+      wishText = "at SSSAM Academy, having successfully completed all training modules and demonstrated strong practical proficiency in the subject. The candidate actively participated in hands-on sessions, live projects, and practical assessments. We wish them continued success in their professional journey.";
     }
   }
 
