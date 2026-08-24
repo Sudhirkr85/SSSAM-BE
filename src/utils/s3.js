@@ -1,6 +1,7 @@
 const { S3Client, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const fs = require('fs');
 const path = require('path');
+const sharp = require('sharp');
 
 // Initialize S3/R2 Client configuration
 const clientConfig = {
@@ -18,19 +19,70 @@ if (process.env.R2_ENDPOINT) {
 const s3Client = new S3Client(clientConfig);
 
 /**
+ * Compresses raster images using sharp (resizes to max 1920px & converts to WebP with 80% quality).
+ * If non-image or processing fails, returns the original buffer untouched.
+ */
+async function processImageBuffer(fileBuffer, originalName, mimeType) {
+  const compressibleMimeTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'image/tiff',
+    'image/bmp',
+  ];
+
+  if (!mimeType || !compressibleMimeTypes.includes(mimeType.toLowerCase())) {
+    return { buffer: fileBuffer, filename: originalName, mimeType };
+  }
+
+  try {
+    const compressedBuffer = await sharp(fileBuffer)
+      .rotate() // Auto-orient based on EXIF metadata
+      .resize({
+        width: 1920,
+        height: 1920,
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .webp({ quality: 80, effort: 4 })
+      .toBuffer();
+
+    const nameWithoutExt = originalName.replace(/\.[^/.]+$/, '');
+    const newFilename = `${nameWithoutExt}.webp`;
+
+    return {
+      buffer: compressedBuffer,
+      filename: newFilename,
+      mimeType: 'image/webp',
+    };
+  } catch (err) {
+    console.warn(`[Image Compression] Could not compress ${originalName}, using original buffer:`, err.message);
+    return { buffer: fileBuffer, filename: originalName, mimeType };
+  }
+}
+
+/**
  * Uploads a file buffer to Cloudflare R2 or AWS S3 bucket, with fallback to local storage.
+ * Automatically compresses images before upload.
  * @param {Buffer} fileBuffer - The file buffer to upload.
  * @param {string} originalName - The original name of the file.
  * @param {string} mimeType - The mime type of the file.
  * @returns {Promise<string>} The public URL or relative local path of the uploaded file.
  */
 async function uploadToS3(fileBuffer, originalName, mimeType) {
+  // Automatically compress & convert images to WebP if applicable
+  const processed = await processImageBuffer(fileBuffer, originalName, mimeType);
+  const targetBuffer = processed.buffer;
+  const targetName = processed.filename;
+  const targetMime = processed.mimeType;
+
   const accessKeyId = process.env.R2_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
   const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
   const bucketName = process.env.R2_BUCKET || process.env.AWS_BUCKET_NAME;
 
   // Sanitize filename and append timestamp
-  const cleanName = originalName.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const cleanName = targetName.replace(/[^a-zA-Z0-9.-]/g, '_');
   const filename = `${Date.now()}-${cleanName}`;
   const fileKey = `uploads/${filename}`;
 
@@ -39,8 +91,8 @@ async function uploadToS3(fileBuffer, originalName, mimeType) {
       const command = new PutObjectCommand({
         Bucket: bucketName,
         Key: fileKey,
-        Body: fileBuffer,
-        ContentType: mimeType,
+        Body: targetBuffer,
+        ContentType: targetMime,
       });
 
       await s3Client.send(command);
@@ -62,7 +114,7 @@ async function uploadToS3(fileBuffer, originalName, mimeType) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
   const localFilePath = path.join(uploadsDir, filename);
-  fs.writeFileSync(localFilePath, fileBuffer);
+  fs.writeFileSync(localFilePath, targetBuffer);
   return `/uploads/${filename}`;
 }
 
